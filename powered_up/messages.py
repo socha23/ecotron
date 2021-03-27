@@ -300,7 +300,7 @@ class PortValueSingle(UpstreamMessage):
     def __init__(self, bytes):
         UpstreamMessage.__init__(self, bytes)
         self._port_id = self.payload_uint8(0)
-        self._int32value = self.payload_uint32(1)
+        self._int32value = self.payload_int32(1)
 
     def port_id(self):
         return self._port_id
@@ -326,6 +326,8 @@ class PORT_OUTPUT_SUBCOMMAND:
     MOTOR_START_SPEED = 0x07
     MOTOR_START_SPEED_FOR_TIME = 0x09
     MOTOR_START_SPEED_FOR_DEGREES = 0x0B
+    MOTOR_GOTO_ABSOLUTE_POSITION = 0x0D
+    MOTOR_PRESET_POSITION = 0x81
 
 class MOTOR_END_STATE:
     FLOAT = 0
@@ -333,14 +335,15 @@ class MOTOR_END_STATE:
     BRAKE = 127
 
 class PortOutput(DownstreamMessage):
-    FLAG_EXECUTE_IMMEDIATELY = 0b00000001
-    FLAG_FEEDBACK = 0b00010000
+    FLAG_EXECUTE_IMMEDIATELY = 0b00010000
+    FLAG_FEEDBACK = 0b00000001
 
-    def __init__(self, port, subcommand, flags = FLAG_EXECUTE_IMMEDIATELY):
+    def __init__(self, port, subcommand, execute_immediately=False):
         DownstreamMessage.__init__(self, MessageTypeIds.PORT_OUTPUT)
         self._port_id = port
         self._subcommand = subcommand
-        self._flags = flags        
+        self._flags = PortOutput.FLAG_FEEDBACK | (PortOutput.FLAG_EXECUTE_IMMEDIATELY if execute_immediately else 0)
+        
 
     def get_payload(self):
         return self.to_uint8(self._port_id) + self.to_uint8(self._flags) + self.to_uint8(self._subcommand) + self.get_sub_payload()
@@ -375,8 +378,17 @@ class PortOutputFeedback(UpstreamMessage):
             msgs.append("Busy / full")
         return ", ".join(msgs)
 
+    def is_in_progress(self):
+        return self._message & 0x01
+
     def is_completed(self):
         return self._message & 0x02
+
+    def is_current_command_discarded(self):
+        return self._message & 0x04
+
+    def is_idle(self):
+        return self._message & 0x08
 
     def __repr__(self):
         return f'Feedback for output to port {port_desc(self._port_id)}: {self._message}: {self.message()}'
@@ -396,8 +408,8 @@ class SetRgbColor(PortOutput):
         return f'RGB output to port {port_desc(self._port_id)}: R:{self.r} G:{self.g} B:{self.b}'
 
 class MotorStartPower(PortOutput):
-    def __init__(self, port_id, power):
-        PortOutput.__init__(self, port_id, PORT_OUTPUT_SUBCOMMAND.MOTOR_START_POWER)
+    def __init__(self, port_id, power, execute_immediately=False):
+        PortOutput.__init__(self, port_id, PORT_OUTPUT_SUBCOMMAND.MOTOR_START_POWER, execute_immediately=execute_immediately)
         self._power = power
 
     def get_sub_payload(self):
@@ -441,8 +453,8 @@ class MotorSetDecTime(PortOutput):
 
 
 class MotorStartSpeed(PortOutput):
-    def __init__(self, port_id, speed, max_power=100, use_profile=0b11):
-        PortOutput.__init__(self, port_id, PORT_OUTPUT_SUBCOMMAND.MOTOR_START_SPEED)
+    def __init__(self, port_id, speed, max_power=100, use_profile=0b11, execute_immediately=False):
+        PortOutput.__init__(self, port_id, PORT_OUTPUT_SUBCOMMAND.MOTOR_START_SPEED, execute_immediately=execute_immediately)
         self._speed = speed
         self._max_power = max_power
         self._use_profile = use_profile
@@ -489,7 +501,35 @@ class MotorStartSpeedForDegrees(PortOutput):
         return self.to_int32(self._degrees) + self.to_int8(self._speed) + self.to_int8(self._max_power) + self.to_int8(self._end_state) + self.to_int8(self._use_profile)
 
     def __repr__(self):
-        return f'Start motor @ {port_desc(self._port_id)} at speed {self._speed} for {self._degrees} degrees'
+        return f'Motor @ {port_desc(self._port_id)} move {self._degrees} degrees at speed {self._speed}'
+
+
+class MotorGotoAbsolutePosition(PortOutput):
+    def __init__(self, port_id, abs_pos, speed, max_power=100, end_state=127, use_profile=0b11, execute_immediately=False):
+        PortOutput.__init__(self, port_id, PORT_OUTPUT_SUBCOMMAND.MOTOR_GOTO_ABSOLUTE_POSITION, execute_immediately=execute_immediately)
+        self._speed = speed
+        self._abs_pos = abs_pos
+        self._max_power = max_power
+        self._end_state = end_state
+        self._use_profile = use_profile
+
+    def get_sub_payload(self):
+        return self.to_int32(self._abs_pos) + self.to_int8(self._speed) + self.to_int8(self._max_power) + self.to_int8(self._end_state) + self.to_int8(self._use_profile)
+
+    def __repr__(self):
+        return f'Motor @ {port_desc(self._port_id)} goto {self._abs_pos} at speed {self._speed}'
+
+
+class MotorPresetPosition(PortOutput):
+    def __init__(self, port_id, pos):
+        PortOutput.__init__(self, port_id, PORT_OUTPUT_SUBCOMMAND.MOTOR_PRESET_POSITION)
+        self._pos = pos
+
+    def get_sub_payload(self):
+        return self.to_int32(self._pos) 
+
+    def __repr__(self):
+        return f'Motor @ {port_desc(self._port_id)} preset to {self._pos}'
 
 ##################################################################################################
 
