@@ -2,8 +2,6 @@ from powered_up.messages import SetRgbColor, IOTypeIds, MotorSetAccTime, MotorSe
     MotorStop, MotorBrake, MotorStartSpeedForTime, MotorStartSpeedForDegrees, PortOutputFeedback, PortValueSingle, PortValueRequest, \
     MotorGotoAbsolutePosition, MotorPresetPosition
 
-from tick_aware import TickAware
-
 class FakePort:
     def send(self, command):
         pass
@@ -92,7 +90,7 @@ class Motor:
         self._port.send(MotorGotoAbsolutePosition(self._port.port_id(), int(position - self._logical_pos_delta), int(speed * 100), max_power=int(power * 100), execute_immediately=execute_immediately))
 
     def _on_idle(self):
-        if True:#self._command_in_progress:
+        if self._command_in_progress:
             self._command_in_progress = False
             if self._on_completed != None:                
                 self._on_completed()
@@ -126,69 +124,6 @@ class Motor:
         if isinstance(msg, PortValueSingle):            
             self._on_motor_pos(msg.int32value())
 
-class InterruptableMotor(TickAware):
-
-    STATE_WAITING = 0
-    STATE_RUNNING = 1
-    STATE_BRAKING = 2
-
-    def __init__(self, motor):
-        TickAware.__init__(self)
-        self._motor = motor
-        self._motor.on_position_changed = self._on_motor_pos
-        self._on_completed = None
-        self._target_pos = 0
-        self._speed = 0
-        self._state = InterruptableMotor.STATE_WAITING
-
-    def set_acc_time(self, acc_time_s):
-        self._motor.set_acc_time(acc_time_s)
-    
-    def set_dec_time(self, dec_time_s): 
-        self._motor.set_dec_time(dec_time_s)
-
-    def goto_absolute_position(self, position, speed, power=1, on_completed = None):
-        print(f"goto {position}")
-        self._target_pos = position
-        self._speed = speed
-        self._on_completed = on_completed
-        if self._state == InterruptableMotor.STATE_RUNNING:
-            self.brake(on_completed=self._start_motor)
-        else:
-            self._start_motor()
-
-    def _start_motor(self):
-        sign = 1 if self._target_pos > self._motor.position() else -1
-        print(f"starting speed {sign * self._speed}")
-        self._motor.start_speed(sign * self._speed, on_completed=lambda:print("START COMPLETED"), execute_immediately=False)
-        self._state = InterruptableMotor.STATE_RUNNING
-
-    def brake(self, on_completed=None):
-        self._motor.brake(on_completed)
-        self._state = InterruptableMotor.STATE_WAITING
-
-    def reset_position(self, pos):
-        self._motor.reset_position(pos)
-
-    def position(self):
-        return self._motor.position()
-
-    def braking_distance(self):
-        return 200
-
-    def _on_motor_pos(self, motor_pos):
-        if self._state == InterruptableMotor.STATE_RUNNING:            
-            if abs(self._target_pos - self._motor.position()) < self.braking_distance():
-                print(f"BRAKING at {self._motor.position()}")
-                self._state = InterruptableMotor.STATE_BRAKING
-                self._motor.brake(on_completed=self._on_brake_completed)
-    
-    def _on_midbrake_completed(self):
-        print("BRAKE COMPLETED")
-
-
-    def _on_brake_completed(self):
-        print("BRAKE COMPLETED")
 
 def instantiate_device(device_id, port):
     if device_id == IOTypeIds.EXTERNAL_MOTOR_TACHO:

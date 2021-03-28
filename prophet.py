@@ -13,7 +13,7 @@ VOL_DROPOFF = 0.4
 
 EVERY_SEC = 9
 
-files = RandomSequence(glob.glob("resources/audio/smac/tech*.ogg"))
+files = RandomSequence(glob.glob("../ecotron_resources/resources/audio/smac/tech*.ogg"))
 
 stereos = RandomSequence([[1, 0], [0.7, 0.4], [0.6, 0.6], [0.4, 0.7], [0, 1]])
 #stereos = [[0.5, 0], [0.4, 0.1], [0.3, 0.3], [0.1, 0.4], [0, 0.5]]
