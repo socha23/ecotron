@@ -1,5 +1,7 @@
 from components.button import Button
 from components.led import LED
+from director import Script
+from sound import Clip
 
 class ElevatorControls:
     def __init__(self, mcp23017):
@@ -14,7 +16,6 @@ class Elevator:
 
     STATE_WAITING = 0
     STATE_MOVING = 1
-    STATE_RESETTING = 2
 
     SPEED = 0.2
 
@@ -22,7 +23,10 @@ class Elevator:
 
     FLOOR_HEIGHTS = [0, 1500, 3000]
 
-    def __init__(self, motor, controls):
+    CLIP_DING = Clip("./resources/elevator_ding.ogg", volume=0.5)
+
+    def __init__(self, motor, controls, director):
+        self._director = director
         self._motor = motor
         self._current_floor = None
         self._controls = controls
@@ -46,29 +50,31 @@ class Elevator:
 
     def go_to_floor(self, floor_idx):
         if self._state != Elevator.STATE_WAITING:
-            return
+            return        
+        self._director.execute(Script()
+            .add_step(lambda: self._on_move_start(floor_idx))
+            .add_async_step(lambda callback: self._motor.goto_absolute_position(Elevator.FLOOR_HEIGHTS[floor_idx], Elevator.SPEED, on_complete=callback))
+            .add_step(lambda: self._on_move_end(floor_idx))
+            .add_async_step(lambda callback: Elevator.CLIP_DING.play(on_complete=callback))
+        )
+
+    def _on_move_start(self, floor_idx):
         self._state = Elevator.STATE_MOVING
         self._controls.floor_button_leds[self._current_floor].off()
         self._controls.floor_button_leds[floor_idx].blink(Elevator.BLINK_TIME, Elevator.BLINK_TIME)
-        self._motor.goto_absolute_position(Elevator.FLOOR_HEIGHTS[floor_idx], Elevator.SPEED, on_completed=lambda: self._go_to_floor_completed(floor_idx))
 
-    def _go_to_floor_completed(self, floor_idx):
-        self._set_current_floor(floor_idx)
-        self._state = Elevator.STATE_WAITING
-    
-    def _set_current_floor(self, floor_idx):
+    def _on_move_end(self, floor_idx):
         self._controls.floor_button_leds[floor_idx].on()
         self._current_floor = floor_idx
+        self._state = Elevator.STATE_WAITING
 
     def reset(self):
-        self._state = Elevator.STATE_RESETTING
         self._motor.set_acc_time(0)
         self._motor.set_dec_time(0)
         self._motor.reset_position(0)
-        self._motor.goto_absolute_position(-3000, 0.2, on_completed=self._reset_move_completed)    
-
-    def _reset_move_completed(self):
-        self._motor.reset_position(0)
-        self._state = Elevator.STATE_WAITING
-        self._set_current_floor(0)
-
+        self._director.execute(Script()
+            .add_async_step(lambda callback: self._motor.goto_absolute_position(-3000, 0.5, on_complete=callback))
+            .add_step(lambda: self._motor.reset_position(0))
+            .add_step(lambda: self._on_move_end(0))
+        )
+        

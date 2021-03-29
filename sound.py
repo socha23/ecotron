@@ -1,21 +1,28 @@
 import pygame
 import time
 
+from tick_aware import TickAware
+
 pygame.init()
 
-class Clip:
+class Clip(TickAware):
   def __init__(self, path, volume=1, stereo=None):
+    TickAware.__init__(self)
     if stereo is None:
         stereo = [1, 1]
     self._stereo = stereo
     self._path = path
     self._volume = volume
-
-  def play(self):
     self._sound = pygame.mixer.Sound(self._path)
+    self._playing = False
+    self._on_complete = lambda: None
+
+  def play(self, on_complete=lambda:None):    
     left, right = self._stereo
     self._channel = self._sound.play()
     self._channel.set_volume(left * self.get_volume(), right * self.get_volume())
+    self._on_complete = on_complete
+    self._playing = True
 
   def get_volume(self):
     return self._volume
@@ -23,6 +30,13 @@ class Clip:
   def set_volume(self, volume):
     self._volume = volume
     self._sound.set_volume(volume)
+
+  def tick(self, time_s, delta_s):
+    if self._playing:
+      if not self._channel.get_busy() or self._channel.get_sound() != self._sound:
+        self._playing = False
+        if self._on_complete != None:
+          self._on_complete()
 
 
 def play_mp3(path):

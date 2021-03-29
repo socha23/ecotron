@@ -2,7 +2,7 @@ import threading
 import time
 
 TICK_AWARES = []
-DEFAULT_TICK_TIME = 0.005
+DEFAULT_TICK_TIME = 0.05
 
 
 class TickAwareController:
@@ -11,17 +11,22 @@ class TickAwareController:
         self._time = initial_time
         self._tick_time = tick_time
         self.on = False        
-        threading.Thread(target=self.tick, daemon=True, name="tick thread").start()
+        threading.Thread(target=self.tick_thread, daemon=True, name="tick thread").start()
 
-    def tick(self):
+    def tick_thread(self):
         while True:
             if self.on:
                 cur_time = time.time()
                 if cur_time > self._time:
-                    for a in self._tick_awares:
-                        a.tick(cur_time, cur_time - self._time)
-                self._time = cur_time
+                    self.tick(cur_time)
             time.sleep(self._tick_time)
+
+    def tick(self, cur_s):
+        delta = cur_s - self._time
+        for a in self._tick_awares:
+            a.tick(cur_s, delta)
+        self._time = cur_s
+
 
     def current_time(self):
         return self._time

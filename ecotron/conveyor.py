@@ -55,7 +55,7 @@ class Conveyor(TickAware):
     def tick(self, cur_s, delta_s):        
         if self._started and self._waiting and cur_s > self._last_wait_start + self.wait_time and self._moves_left != 0:
             self._waiting = False
-            self._motor.start_speed_for_degrees(self.speed * SPEED_SCALING, self._degrees_per_one_move(), on_completed=self.on_move_completed)
+            self._motor.start_speed_for_degrees(self.speed * SPEED_SCALING, self._degrees_per_one_move(), on_complete=self.on_move_completed)
             if self._moves_left > 0:
                 self._moves_left -= 1
         if self._moves_left == 0:

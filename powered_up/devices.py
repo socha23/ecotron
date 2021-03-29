@@ -50,7 +50,7 @@ class Motor:
     MODE_ANGLE_SENSOR = 0x02
 
     def __init__(self, port=FakePort()):
-        self._on_completed = lambda: None
+        self._on_complete = lambda: None
         self.set_port(port)
         self._motor_pos = None
         self._logical_pos = 0
@@ -69,32 +69,32 @@ class Motor:
     def set_dec_time(self, dec_time_s): 
         self._port.send(MotorSetDecTime(self._port.port_id(), dec_time_s * 1000))
 
-    def brake(self, on_completed=None):
-        self._on_completed = on_completed
+    def brake(self, on_complete=None):
+        self._on_complete = on_complete
         self._port.send(MotorBrake(self._port.port_id()))
 
-    def start_speed(self, speed, power=1, on_completed=None, execute_immediately=False):
-        self._on_completed = on_completed
+    def start_speed(self, speed, power=1, on_complete=None, execute_immediately=False):
+        self._on_complete = on_complete
         self._port.send(MotorStartSpeed(self._port.port_id(), int(speed * 100), max_power=int(power * 100), execute_immediately=execute_immediately))
 
-    def start_speed_for_time(self, speed, time_s, power=1, on_completed=None):
-        self._on_completed = on_completed
+    def start_speed_for_time(self, speed, time_s, power=1, on_complete=None):
+        self._on_complete = on_complete
         self._port.send(MotorStartSpeedForTime(self._port.port_id(), int(speed * 100), time_s * 1000, max_power=int(power * 100)))
 
-    def start_speed_for_degrees(self, speed, degrees, power=1, on_completed=None):
-        self._on_completed = on_completed
+    def start_speed_for_degrees(self, speed, degrees, power=1, on_complete=None):
+        self._on_complete = on_complete
         self._port.send(MotorStartSpeedForDegrees(self._port.port_id(), int(degrees), int(speed * 100), max_power=int(power * 100)))
 
-    def goto_absolute_position(self, position, speed, power=1, on_completed=None, execute_immediately=False):
-        self._on_completed = on_completed
+    def goto_absolute_position(self, position, speed, power=1, on_complete=None, execute_immediately=False):
+        self._on_complete = on_complete
         self._port.send(MotorGotoAbsolutePosition(self._port.port_id(), int(position - self._logical_pos_delta), int(speed * 100), max_power=int(power * 100), execute_immediately=execute_immediately))
 
     def _on_idle(self):
         if self._command_in_progress:
             self._command_in_progress = False
-            if self._on_completed != None:                
-                self._on_completed()
-                self._on_completed = None
+            if self._on_complete != None:                
+                self._on_complete()
+                self._on_complete = None
 
     def _on_command_in_progress(self):
         self._command_in_progress = True
