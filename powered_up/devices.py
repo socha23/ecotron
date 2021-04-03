@@ -44,6 +44,9 @@ class RGBLED:
     def set_rgb(self, r, g, b):
         self.value = (r, g, b)
 
+    def is_connected(self):
+        return not isinstance(self._port, FakePort)
+
 
 class Motor:
 
@@ -87,7 +90,10 @@ class Motor:
 
     def goto_absolute_position(self, position, speed, power=1, on_complete=None, execute_immediately=False):
         self._on_complete = on_complete
-        self._port.send(MotorGotoAbsolutePosition(self._port.port_id(), int(position - self._logical_pos_delta), int(speed * 100), max_power=int(power * 100), execute_immediately=execute_immediately))
+        dest_position = position
+        if self._logical_pos_delta != None:
+            dest_position -= self._logical_pos_delta
+        self._port.send(MotorGotoAbsolutePosition(self._port.port_id(), int(dest_position), int(speed * 100), max_power=int(power * 100), execute_immediately=execute_immediately))
 
     def _on_idle(self):
         if self._command_in_progress:
@@ -112,7 +118,8 @@ class Motor:
 
     def reset_position(self, position):
         self._logical_pos = position
-        self._logical_pos_delta = position - self._motor_pos
+        if self._motor_pos != None:
+            self._logical_pos_delta = position - self._motor_pos
 
     def on_upstream_message(self, msg):
         if isinstance(msg, PortOutputFeedback):

@@ -79,23 +79,24 @@ class SourceWatcherMixin:
 
 
 class Blink(ValueSource):
-    def __init__(self, time_on = 1, time_off = 1):
+    def __init__(self, value = 1):
         ValueSource.__init__(self)
+
+        time_on = value
+        time_off = value
+        if isinstance(value, list) or isinstance(value, tuple):
+            time_on = value[0]
+            time_off = value[1]
+        
         self._time_on = time_on
         self._time_off = time_off
-        self._cycle_start = self.current_time()
 
     def value(self):
-        cur_time = self.current_time()
-        delta = cur_time - self._cycle_start
-        if delta < self._time_on:
+        cycle_time = self.current_time() % (self._time_on + self._time_off)
+        if cycle_time < self._time_on:
             return 1
-        elif delta < self._time_on + self._time_off:
-            return 0
         else:
-            cycle_time = self._time_on + self._time_off
-            self._cycle_start = self._cycle_start + (int(delta / cycle_time) * cycle_time)
-            return self.value
+            return 0
 
 
      

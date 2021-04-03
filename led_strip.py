@@ -7,7 +7,7 @@ from gpiozero import Button, PWMLED
 
 
 
-NUM_PIXELS = 8
+NUM_PIXELS = 15
 
 pixels = neopixel.NeoPixel(board.D21, NUM_PIXELS, auto_write=False)
 
@@ -49,5 +49,4 @@ def run_strip(color = (0, 64, 32), bg_color = (0, 0, 0), speed_pulse = 0.5, spee
         sleep(speed_pause)
 
 strip_off()
-
 

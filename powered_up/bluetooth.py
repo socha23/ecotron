@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 # Tries to connect to a device with a given MAC address. 
 # Blocks until the device is found and connected to. Returns Peripheral representing the device or None if nothing was found after timeout.
-def connect_ble(mac_address, timeout=60):
+def connect_ble(mac_address, timeout=600):
 
     class ScanDelegate(DefaultDelegate):
         def __init__(self):

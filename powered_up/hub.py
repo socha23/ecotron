@@ -4,11 +4,12 @@ from powered_up.devices import RGBLED, instantiate_device
 
 logger = logging.getLogger(__name__)
 
-
-
 class Hub:
     def __init__(self):
         self._connection = None
+        self._devices_on_ports = dict()
+        self._on_connect_device = dict()
+        self._internal_led = RGBLED()
 
     def is_connected(self):
         return self._connection != None
@@ -23,8 +24,46 @@ class Hub:
         else:
             self._connection.send(message)
 
+    def device(self, port_letter):
+        return self._devices_on_ports.get(ord(port_letter) - ord("A"))
+
+    def set_on_connect(self, port_letter, on_connect):
+        self._on_connect_device[ord(port_letter) - ord("A")] = on_connect
+
     def handle_upstream_message(self, message):
-        pass
+        if isinstance(message, AttachedIO):
+            port = Port(self, message.port_id())        
+            if message.device_id() == IOTypeIds.RGB_LIGHT:
+                self._internal_led.set_port(port)
+                self._internal_led.value = (255, 128, 0)
+            elif not is_port_internal(message.port_id()):
+                device = instantiate_device(message.device_id(), port)
+                logger.debug(f"registering device {device} on port {port}")
+                self._devices_on_ports[message.port_id()] = device
+                handler = self._on_connect_device.get(message.port_id())
+                if handler != None:
+                    handler(device)
+        elif isinstance(message, UpstreamMessage) and hasattr(message, "port_id"):
+            device = self._devices_on_ports.get(message.port_id())
+            if device != None and hasattr(device, "on_upstream_message"):
+                device.on_upstream_message(message)
+
+    def internal_led(self):
+        return self._internal_led
+
+    def wait_for_devices(self, *args):
+        while True:
+            missing_devices = []
+            for needed_device in args:
+                if self.device(needed_device) == None:
+                    missing_devices.append(needed_device)
+                if not self._internal_led.is_connected():
+                    missing_devices.append("Internal LED")
+            if not missing_devices:
+                self._internal_led.value = (0, 255, 0)
+                break
+            else:
+                logger.info(f"Waiting for devices: {missing_devices}")
 
 
 class Port:
@@ -53,36 +92,3 @@ class Port:
         return f"Port {self._port_id}"
 
 
-class TechnicHub(Hub):
-    def __init__(self):
-        Hub.__init__(self)
-        self._internal_led = RGBLED()
-        
-        self._devices_on_ports = dict()
-        self._on_connect_device = dict()
-
-    def handle_upstream_message(self, message):
-        if isinstance(message, AttachedIO):
-            port = Port(self, message.port_id())        
-            if message.device_id() == IOTypeIds.RGB_LIGHT:
-                self._internal_led.set_port(port)
-            elif not is_port_internal(message.port_id()):
-                device = instantiate_device(message.device_id(), port)
-                logger.debug(f"registering device {device} on port {port}")
-                self._devices_on_ports[message.port_id()] = device
-                handler = self._on_connect_device.get(message.port_id())
-                if handler != None:
-                    handler(device)
-        elif isinstance(message, UpstreamMessage) and hasattr(message, "port_id"):
-            device = self._devices_on_ports.get(message.port_id())
-            if device != None and hasattr(device, "on_upstream_message"):
-                device.on_upstream_message(message)
-
-    def internal_led(self):
-        return self._internal_led
-
-    def device(self, port_letter):
-        return self._devices_on_ports.get(ord(port_letter) - ord("A"))
-
-    def set_on_connect(self, port_letter, on_connect):
-        self._on_connect_device[ord(port_letter) - ord("A")] = on_connect

@@ -3,8 +3,8 @@ from time import sleep
 from adafruit_pca9685 import PCA9685
 import board
 
-pca = PCA9685(board.I2C())
-pca.frequency = 50
+#pca = PCA9685(board.I2C())
+#pca.frequency = 50
 
 # 0x5000 = CLOCKWISE
 
@@ -14,18 +14,25 @@ pca.frequency = 50
 
 # pca.channels[0].duty_cycle = 0x1780 # zero
 
-pca.channels[0].duty_cycle = 0xc000
+#pca.channels[0].duty_cycle = 0x5000
 
-sleep(2)
 
-pca.channels[0].duty_cycle = 0x0000
+#pca.channels[0].duty_cycle = 0x0000
 
-#kit = ServoKit(channels=16, reference_clock_speed=25000000)
+kit = ServoKit(channels=16, reference_clock_speed=25000000)
+kit.continuous_servo[0].set_pulse_width_range(1560, 2114)
 
 #NEUTRAL = 132
 
+
+kit.continuous_servo[0].throttle = 1
+
+sleep(5)
+
+kit.continuous_servo[0].throttle = 0
+
 # nice settings for small servo running as 360:
-#kit.continuous_servo[0].set_pulse_width_range(1560, 2114)
+#
 
 # my micro servo as a continuous servo:
 #kit.continuous_servo[0].set_pulse_width_range(1515, 2150)

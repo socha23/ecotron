@@ -29,5 +29,5 @@ class LED(SourceWatcherMixin):
     def off(self):
         self.source = AlwaysOffSource()
 
-    def blink(self, on_time = 1, off_time = 1):
-        self.source = Blink(on_time, off_time)
+    def blink(self, value = 1):
+        self.source = Blink(value)

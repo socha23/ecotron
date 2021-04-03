@@ -2,7 +2,7 @@ import threading
 import time
 
 TICK_AWARES = []
-DEFAULT_TICK_TIME = 0.05
+DEFAULT_TICK_TIME = 0.02
 
 
 class TickAwareController:

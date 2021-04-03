@@ -2,7 +2,7 @@
 from powered_up.bluetooth import connect_ble
 from socketserver import BaseRequestHandler, ThreadingTCPServer, TCPServer
 from powered_up.messages import AttachedIO, DEBUG_REPLAY_ATTACHED_IO_BYTES, DebugReplayAttachedIO, DebugDownstreamMessage, decode_upstream_message
-from powered_up.hub import TechnicHub
+from powered_up.hub import Hub
 from threading import Thread
 import socket
 import logging
@@ -13,7 +13,7 @@ def start_debug_server(mac_address, my_port=8081, proxy_port=8082):
     DebugServer(mac_address, my_port, proxy_port)
 
 def connect_debug_technic_hub(server_port=8081, proxy_port=8082):
-    hub = TechnicHub()
+    hub = Hub()
     debug_connection = DebugConnection(server_port, proxy_port)
     hub.connect(debug_connection)
     Thread(target=debug_connection.replay_io, daemon=True).start()
