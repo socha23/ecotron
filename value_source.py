@@ -1,10 +1,12 @@
+import math
+
 from tick_aware import TickAware
 
 class ValueSource(TickAware):
     def __init__(self):
         TickAware.__init__(self)
 
-    def get_value(self):
+    def value(self):
         return 1
 
     def tick(self, cur_s, delta_s):
@@ -98,5 +100,86 @@ class Blink(ValueSource):
         else:
             return 0
 
+# sine pulse
+class Pulse(ValueSource):
+    def __init__(self, time_s=1, inner_source=AlwaysOnSource(), common_phase=True):
+        ValueSource.__init__(self)
+        self._inner_source = inner_source
+        self._time_s = time_s
+        self._phase_start = 0 if common_phase else self.current_time()
 
-     
+    def value(self):
+        cycle_time = (self.current_time() - self._phase_start) % self._time_s
+        multiplier = (math.sin(2 * math.pi * (cycle_time / self._time_s)) + 1) / 2
+        return multiply(self._inner_source.value(), multiplier)
+
+    def close(self):
+        self._inner_source.close()
+        ValueSource.close(self)
+
+
+# pixel strip only - running 'wave', left-to-right
+class Wave(ValueSource):
+    def __init__(self, size, inner_source=AlwaysOnSource(), pixels_per_s=1, wave_width=4, spread=10, phase=0):
+        ValueSource.__init__(self)
+        self._size = size
+        self._inner_source = inner_source
+        self._wave_width = wave_width
+        self._pixels_per_s = pixels_per_s
+        self._spread = spread
+        self._phase = phase
+
+    def value(self):
+        current_phase = (self.current_time() * self._pixels_per_s + self._phase) % self._spread
+        mask = wave_mask(self._size, self._spread, current_phase, wave_width=self._wave_width)
+        return multiply(self._inner_source.value(), mask)
+        
+    def close(self):
+        self._inner_source.close()
+        ValueSource.close(self)
+
+
+def wave_mask(size, spread, phase, wave_width=2):
+    result = []
+    for i in range(size):
+        i = i % spread
+        dist = min(abs(i - phase), abs(i - phase - spread), abs(i - phase + spread))
+        result.append(max(0, 1 - dist / wave_width))
+    return result
+
+def is_number(val):
+    return isinstance(val, int) or isinstance(val, float)
+
+def is_tuple(val):
+    return isinstance(val, tuple)
+
+def is_list(val):
+    return isinstance(val, list)
+
+def multiply(value, multiplier):
+    # scalar multiply
+    if is_number(value) and is_number(multiplier):
+        return value * multiplier    
+    # vector multiply
+    elif is_list(value) and is_list(multiplier):
+        return [multiply(x, multiplier[idx]) for idx, x in enumerate(value)]
+    # list x scalar
+    elif is_list(value) and is_number(multiplier):
+        return [multiply(x, multiplier) for x in value]
+    # scalar x list
+    elif is_number(value) and is_list(multiplier):
+        return multiply(multiplier, value)
+    # tuple x scalar
+    elif is_tuple(value) and is_number(multiplier):
+        return tuple(multiply(list(value), multiplier))
+    # scalar x tuple
+    elif is_number(value) and is_tuple(multiplier):
+        return multiply(multiplier, value)
+    # tuple x list
+    elif is_tuple(value) and is_list(multiplier):
+        return [multiply(value, x) for x in multiplier]
+    # list x tuple
+    elif is_list(value) and is_tuple(multiplier):
+        return multiply(multiplier, value)
+    else:
+        raise f"Cannot multiply {value} by {multiplier}"

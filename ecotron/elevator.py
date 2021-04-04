@@ -44,12 +44,10 @@ class Elevator:
 
 
     def go_floor_up(self):
-        print("UP")
         if self._last_target() < len(Elevator.FLOOR_HEIGHTS) - 1:
             self.go_to_floor(self._last_target() + 1)
 
     def go_floor_down(self):
-        print("DOWN")
         if self._last_target() > 0:
             self.go_to_floor(self._last_target() - 1)
 
@@ -65,13 +63,10 @@ class Elevator:
 
     def go_to_floor(self, floor_idx):
         if self._state == Elevator.STATE_WAITING and self._current_floor == floor_idx:
-            print("IGNORE")
             return        
         elif self._state != Elevator.STATE_WAITING and floor_idx != self._current_target:
-            print(f"ENQUEUE {floor_idx}")
             self._enqueue_floor(floor_idx)
         else:
-            print(f"GOTO {floor_idx}")
             self._director.execute(Script()
                 .add_step(lambda: self._on_move_start(floor_idx))
                 .add_async_step(lambda callback: self._motor.goto_absolute_position(Elevator.FLOOR_HEIGHTS[floor_idx], Elevator.SPEED, on_complete=callback))
