@@ -25,6 +25,21 @@ class ConstantSource(ValueSource):
         return self._val
 
 
+class MultiplySource(ValueSource):
+    def __init__(self, inner_source, multiplier=1):
+        ValueSource.__init__(self)
+        self._inner_source = inner_source
+        self._multiplier = multiplier
+
+    def value(self):
+        return self._inner_source.value() * self._multiplier
+
+    def close(self):
+        self._inner_source.close()
+        ValueSource.close(self)
+
+
+
 class AlwaysOnSource(ConstantSource):
     def __init__(self):
         ConstantSource.__init__(self, 1)

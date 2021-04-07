@@ -40,7 +40,7 @@ class Elevator:
         controls.button_red.on_press = self.go_floor_up
         controls.button_green.on_press = self.go_floor_down
                 
-        self.reset()
+        #self.reset()
 
 
     def go_floor_up(self):
@@ -103,9 +103,8 @@ class Elevator:
     def reset(self):
         self._motor.set_acc_time(0)
         self._motor.set_dec_time(0)
-        self._motor.reset_position(0)
         self._director.execute(Script()
-            .add_async_step(lambda callback: self._motor.goto_absolute_position(-3000, 0.5, on_complete=callback))
+            .add_async_step(lambda callback: self._motor.goto_absolute_position(self._motor.position()-3000, 0.5, on_complete=callback))
             .add_step(lambda: self._motor.reset_position(0))
             .add_step(lambda: self._on_move_end(0))
             )

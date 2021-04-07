@@ -6,14 +6,16 @@ from tick_aware import TickAware
 pygame.init()
 
 class Clip(TickAware):
-  def __init__(self, path, volume=1, stereo=None):
+  def __init__(self, path_or_sound, volume=1, stereo=None):
     TickAware.__init__(self)
     if stereo is None:
-        stereo = [1, 1]
+      stereo = [1, 1]
     self._stereo = stereo
-    self._path = path
     self._volume = volume
-    self._sound = pygame.mixer.Sound(self._path)
+    if isinstance(path_or_sound, pygame.mixer.Sound):
+      self._sound = path_or_sound
+    else:
+      self._sound = pygame.mixer.Sound(path_or_sound)
     self._playing = False
     self._on_complete = lambda: None
 

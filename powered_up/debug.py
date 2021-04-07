@@ -8,7 +8,6 @@ import socket
 import logging
 from time import sleep
 
-
 def start_debug_server(mac_address, my_port=8081, proxy_port=8082):
     DebugServer(mac_address, my_port, proxy_port)
 

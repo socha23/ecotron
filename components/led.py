@@ -17,7 +17,7 @@ class PrimitiveLED:
 
 class LED(SourceWatcherMixin):
     def __init__(self, pin):
-        SourceWatcherMixin.__init__(self)        
+        SourceWatcherMixin.__init__(self)
         self._primitive_led = PrimitiveLED(pin)
 
     def on_value_change(self, val):
@@ -31,3 +31,14 @@ class LED(SourceWatcherMixin):
 
     def blink(self, value = 1):
         self.source = Blink(value)
+
+
+class PWMLED(SourceWatcherMixin):
+    def __init__(self, pwm_channel):
+        SourceWatcherMixin.__init__(self)
+        self._pwm_channel = pwm_channel
+
+    def on_value_change(self, val):
+        self._pwm_channel.duty_cycle = int(0xffff * val**3) # val^2 to correct for non-linearity
+    
+

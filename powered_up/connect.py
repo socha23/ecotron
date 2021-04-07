@@ -2,6 +2,7 @@ from threading import Thread
 from time import sleep
 from powered_up.hub import Hub
 from powered_up.bluetooth import connect_ble
+from speech import say, SpeechLines
 
 def connect_technic_hub(mac_address, led_to_blink_while_connecting=None, led_to_turn_on_when_connected=None):
     hub = Hub()
@@ -19,6 +20,7 @@ class _ConnectionThread(Thread):
     
     def run(self):
         self._led_to_blink_while_connecting.blink()
+        say(SpeechLines.WELCOME)
         connection = connect_ble(self._mac_address)        
         self._led_to_blink_while_connecting.off()
         if connection != None:
