@@ -1,4 +1,6 @@
 import pygame
+import pygame.sndarray
+
 import time
 
 from tick_aware import TickAware
@@ -22,14 +24,22 @@ class Clip(TickAware):
   def play(self, on_complete=lambda:None):    
     left, right = self._stereo
     self._channel = self._sound.play()
-    self._channel.set_volume(left * self.get_volume(), right * self.get_volume())
+    self._channel.set_volume(left * self.volume, right * self.volume)
     self._on_complete = on_complete
     self._playing = True
 
-  def get_volume(self):
+  def duration_s(self):
+    return self._sound.get_length()
+
+  def stop(self):
+    self._sound.stop()
+
+  @property
+  def volume(self):
     return self._volume
 
-  def set_volume(self, volume):
+  @volume.setter
+  def volume(self, volume):
     self._volume = volume
     self._sound.set_volume(volume)
 
@@ -40,6 +50,13 @@ class Clip(TickAware):
         if self._on_complete != None:
           self._on_complete()
 
+  def samples(self):
+    return pygame.sndarray.array(self._sound)
+
+
+
+
+##################################################################################################################################################################################################
 
 def play_mp3(path):
     pygame.mixer.music.load(path)

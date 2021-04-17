@@ -55,7 +55,8 @@ class Hub:
         while True:
             missing_devices = []
             for needed_device in args:
-                if self.device(needed_device) == None:
+                found_device = self.device(needed_device)
+                if found_device == None or (hasattr(found_device, "is_initialized") and not found_device.is_initialized()):
                     missing_devices.append(needed_device)
                 if not self._internal_led.is_connected():
                     missing_devices.append("Internal LED")
@@ -63,7 +64,7 @@ class Hub:
                 self._internal_led.value = (0, 255, 0)
                 break
             else:
-                logger.info(f"Waiting for devices: {missing_devices}")
+                logger.debug(f"Waiting for devices: {missing_devices}")
 
 
 class Port:

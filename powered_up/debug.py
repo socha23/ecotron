@@ -35,6 +35,7 @@ class DebugServer:
         self._logger.info("Ready to handle connections")
         with TCPServer(("localhost", my_port), DebugServerHandler) as server:
             server.on_downstream_bytes = self._on_downstream_bytes
+            server.allow_reuse_address = True
             server.serve_forever()
 
     def _on_downstream_bytes(self, msg_bytes):
@@ -56,7 +57,10 @@ class DebugServer:
     def _send_upstream(self, msg):
         sock = None
         try:
-            sock = socket.create_connection(("localhost", self._proxy_port), 5)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.settimeout(5)
+            sock.connect(("localhost", self._proxy_port)) 
             sock.sendall(msg.bytes())
         except ConnectionRefusedError:
             pass
@@ -90,6 +94,7 @@ class DebugConnection:
     def start_proxy_server(self):
         with ThreadingTCPServer(("localhost", self._proxy_port), ProxyServerHandler) as proxy_server:
             proxy_server.on_upstream_message = self._on_upstream_message
+            proxy_server.allow_reuse_address = True
             proxy_server.serve_forever()
 
     def replay_io(self):
@@ -99,7 +104,10 @@ class DebugConnection:
         CONNECTION_LOGGER.debug(f"Send: {msg}")
         sock = None
         try:
-            sock = socket.create_connection(("localhost", self._server_port), 5)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.settimeout(5)
+            sock.connect(("localhost", self._server_port)) 
             sock.sendall(msg.bytes())
         finally:
             if sock != None:

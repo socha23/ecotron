@@ -2,6 +2,8 @@ from powered_up.messages import SetRgbColor, IOTypeIds, MotorSetAccTime, MotorSe
     MotorStop, MotorBrake, MotorStartSpeedForTime, MotorStartSpeedForDegrees, PortOutputFeedback, PortValueSingle, PortValueRequest, \
     MotorGotoAbsolutePosition, MotorPresetPosition
 
+from time import sleep
+
 class FakePort:
     def send(self, command):
         pass
@@ -54,10 +56,10 @@ class Motor:
 
     def __init__(self, port=FakePort()):
         self._on_complete = lambda: None
-        self.set_port(port)
         self._motor_pos = None
         self._logical_pos = 0
         self._logical_pos_delta = None
+        self.set_port(port)
         self._command_in_progress = False
         self.on_position_changed = lambda _: None
 
@@ -65,6 +67,9 @@ class Motor:
         self._port = port
         self._port.set_mode(self.MODE_ANGLE_SENSOR, 1, True) 
         self._port.send(PortValueRequest(self._port.port_id()))        
+
+    def is_initialized(self):
+        return self._motor_pos != None
 
     def set_acc_time(self, acc_time_s):
         self._port.send(MotorSetAccTime(self._port.port_id(), acc_time_s * 1000))
@@ -95,6 +100,10 @@ class Motor:
             dest_position -= self._logical_pos_delta
         self._port.send(MotorGotoAbsolutePosition(self._port.port_id(), int(dest_position), int(speed * 100), max_power=int(power * 100), execute_immediately=execute_immediately))
 
+
+    def is_busy(self):
+        return self._command_in_progress
+
     def _on_idle(self):
         if self._command_in_progress:
             self._command_in_progress = False
@@ -116,19 +125,19 @@ class Motor:
     def position(self):
         return self._logical_pos
 
-    def reset_position(self, position):
+    def reset_position(self, position=0):
         self._logical_pos = position
-        if self._motor_pos != None:
-            self._logical_pos_delta = position - self._motor_pos
+        self._logical_pos_delta = position - self._motor_pos
 
     def on_upstream_message(self, msg):
         if isinstance(msg, PortOutputFeedback):
-            print(f"got output feedback: {msg} at pos:{self._logical_pos}")
+            #print(f"got output feedback: {msg} at pos:{self._logical_pos}")
+            pass
         if isinstance(msg, PortOutputFeedback) and msg.is_in_progress():
             self._on_command_in_progress()
         if isinstance(msg, PortOutputFeedback) and msg.is_idle():
             self._on_idle()
-        if isinstance(msg, PortValueSingle):            
+        if isinstance(msg, PortValueSingle):    
             self._on_motor_pos(msg.int32value())
 
 

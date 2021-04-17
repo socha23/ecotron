@@ -1,4 +1,5 @@
 import math
+import random
 
 from tick_aware import TickAware
 
@@ -131,7 +132,6 @@ class Pulse(ValueSource):
     def close(self):
         self._inner_source.close()
         ValueSource.close(self)
-
 
 # pixel strip only - running 'wave', left-to-right
 class Wave(ValueSource):

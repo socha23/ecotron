@@ -26,21 +26,16 @@ class Elevator:
 
     CLIP_DING = Clip("./resources/elevator_ding2.ogg")
 
-    def __init__(self, motor, controls, director):
+    def __init__(self, director, controls, motor):
+
         self._director = director
         self._motor = motor
         self._current_floor = None
         self._current_target = None
         self._queued_floors = []
         self._controls = controls
-        for floor_idx in range(len(Elevator.FLOOR_HEIGHTS)):
-            controls.floor_buttons[floor_idx].on_press = lambda floor_idx=floor_idx: self.go_to_floor(floor_idx)
-            controls.floor_button_leds[floor_idx].off()
-        
-        controls.button_red.on_press = self.go_floor_up
-        controls.button_green.on_press = self.go_floor_down
-                
-        #self.reset()
+
+        self.reset()
 
 
     def go_floor_up(self):
@@ -101,12 +96,12 @@ class Elevator:
         self._state = Elevator.STATE_WAITING
 
     def reset(self):
+        for led in self._controls.floor_button_leds:
+            led.off() 
         self._motor.set_acc_time(0)
         self._motor.set_dec_time(0)
         self._director.execute(Script()
-            .add_async_step(lambda callback: self._motor.goto_absolute_position(self._motor.position()-3000, 0.5, on_complete=callback))
+        #    .add_async_step(lambda callback: self._motor.goto_absolute_position(self._motor.position()-3000, 0.5, on_complete=callback))
             .add_step(lambda: self._motor.reset_position(0))
             .add_step(lambda: self._on_move_end(0))
             )
-
-        

@@ -25,8 +25,10 @@ class NeopixelStrip(TickAware):
         self._pixels[:] = [(0,0,0)] * self._pixel_count
         self._pixels.show()
 
-    def set(self, offset, values):        
-        self._value[offset:(offset + len(values))] = values
+    def set(self, offset, values): 
+
+
+        self._value[offset:(offset + len(values))] = [(int(r * 255), int(g * 255), int(b * 255)) for (r, g, b) in values]
 
 
 class NeopixelSegment(SourceWatcherMixin):

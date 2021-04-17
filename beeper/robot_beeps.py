@@ -1,5 +1,7 @@
 from beeper.synthesis import make_sample, make_clip, Sawtooth, Sine, Multiply, Const, Clip, Triangle, Square, ADSR, Add
-from random import randrange, choice
+from random import randrange, choice, randint
+import logging
+import time
 
 SCALE_JUST = [1, 9/8, 5/4, 4/3, 3/2, 5/3, 15/8]
 SCALE_PYTHAGOREAN = [1, 9/8, 81/64, 4/3, 3/2, 27/16, 243/128]
@@ -11,12 +13,11 @@ def octave_up(scale):
 def octave_down(scale):
     return [x / 2 for x in scale]
 
-SCALE_PENTATONIC_EXTENDED = SCALE_PENTATONIC + octave_up(SCALE_PENTATONIC)
-
 def scale_frequencies(scale, base):
     return [base * x for x in scale]
 
-FREQUENCIES = scale_frequencies(SCALE_PENTATONIC_EXTENDED, 300)
+FREQUENCIES = scale_frequencies(SCALE_PENTATONIC + octave_up(SCALE_PENTATONIC), 300)
+#FREQUENCIES = scale_frequencies(SCALE_JUST + octave_up(SCALE_JUST), 260)
 
 ADSR_RATIOS = [0.1, 0.2, 0.5, 0.2]
 ADSR_ATT = [1, 0.7]
@@ -39,6 +40,9 @@ class Beep:
         
 BEEPS = []
 WEIGHTED_BEEPS = []
+
+logger = logging.getLogger("RobotBeeps")
+library_generation_start = time.time()
 for (length, weight) in LENGTHS_AND_WEIGHTS:
     beeps_of_length = []
     adsr = ADSR(*[r * length for r in ADSR_RATIOS], *ADSR_ATT)
@@ -57,7 +61,7 @@ for (length, weight) in LENGTHS_AND_WEIGHTS:
     BEEPS.append(beeps_of_length)
     for _ in range(weight):
         WEIGHTED_BEEPS.append(beeps_of_length)
-
+print(f"Robot beeps generated in {time.time() - library_generation_start}")
 
 def random_beep(library=WEIGHTED_BEEPS):
     row = choice(library) 
@@ -69,8 +73,12 @@ class BeepSentence:
         self.beeps = beeps
         self.clip = make_clip(*[b.sample for b in self.beeps])
 
-    def play(self, on_complete=lambda:None):
+    def play(self, volume=1, on_complete=lambda:None):
+        self.clip.volume = volume
         self.clip.play(on_complete=on_complete)
+
+    def stop(self):
+        self.clip.stop()
 
     def duration_s(self):
         return sum([b.duration_s for b in self.beeps])
@@ -89,8 +97,8 @@ class BeepSentence:
         return self.pitch_and_att(time_s)[1]
 
 
-def random_sentence():
-    length = 2 + randrange(6) + randrange(6)
+def random_sentence(min_len=2, max_len=10):
+    length = randint(min_len, max_len)
     beeps = []
     for _ in range(length):
         beeps.append(random_beep())

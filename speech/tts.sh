@@ -7,8 +7,8 @@ curl -X POST \
     \"text\":\"$1\"
   },
   \"voice\":{
-    \"languageCode\":\"en-gb\",
-    \"name\":\"en-GB-Standard-A\",
+    \"languageCode\":\"en-us\",
+    \"name\":\"en-US-Wavenet-C\",
     \"ssmlGender\":\"FEMALE\"
   },
   \"audioConfig\":{

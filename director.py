@@ -18,6 +18,10 @@ class Script:
     def __init__(self):
         self.steps = []
 
+    def add_step_at_start(self, handler):
+        self.steps.insert(0, _SyncStep(handler))
+        return self
+
     def add_step(self, handler):
         self.steps.append(_SyncStep(handler))
         return self
@@ -29,6 +33,12 @@ class Script:
     def add_sleep(self, duration_s):
         self.steps.append(_SleepStep(duration_s))
         return self
+
+    def add(self, script):
+        self.steps.extend(script.steps)
+
+def script_with_step(handler):
+    return Script().add_step(handler)
 
 
 class _ScriptRunner(TickAware):
@@ -107,3 +117,32 @@ class Director(TickAware):
     def execute(self, script, on_complete=lambda:None):
         runner = _ScriptRunner(script, self, on_complete)
         self._script_runners.add(runner)
+
+class ScriptQueue:
+    def __init__(self, director, on_complete=lambda:None):
+        self._director = director
+        self._current_script = None
+        self._script_queue = []
+        self._on_complete = on_complete
+
+    def _execute_next_from_queue(self):
+        if self._script_queue:
+            self._current_script = self._script_queue.pop(0)
+            self._director.execute(self._current_script, on_complete=self._when_current_script_execution_complete)
+        else:
+            if self._on_complete:
+                self._on_complete()
+
+    def _when_current_script_execution_complete(self):
+        self._current_script = None
+        self._execute_next_from_queue()
+
+    def enqueue(self, script):
+        self._script_queue.append(script)
+        if not self._current_script:
+            self._execute_next_from_queue()
+
+    def replace_queue(self, script):
+        self._script_queue = [script]
+        if not self._current_script:
+            self._execute_next_from_queue()

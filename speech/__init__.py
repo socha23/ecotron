@@ -4,6 +4,9 @@ import os.path
 class SpeechLines:
     WELCOME = "Ecotron initialized. Press the button on the Technic hub"
     ECOTRON_READY = "Ecotron Terrabiology Institute ready"
+
+    CONVEYOR_CALIBRATION_STARTED = "Conveyor calibration started"
+    CONVEYOR_CALIBRATION_COMPLETE = "Conveyor calibration complete"
     
     
 clips_by_text = dict()
