@@ -33,9 +33,9 @@ class DebugServer:
         self._connection.on_upstream_message = self._on_upstream_message
         self._attached_io_messages = []
         self._logger.info("Ready to handle connections")
+        TCPServer.allow_reuse_address = True
         with TCPServer(("localhost", my_port), DebugServerHandler) as server:
-            server.on_downstream_bytes = self._on_downstream_bytes
-            server.allow_reuse_address = True
+            server.on_downstream_bytes = self._on_downstream_bytes            
             server.serve_forever()
 
     def _on_downstream_bytes(self, msg_bytes):

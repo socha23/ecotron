@@ -3,20 +3,25 @@ from tick_aware import TickAware, DEFAULT_CONTROLLER
 class _SyncStep:
     def __init__(self, handler):
         self.handler = handler
+        self.duration_s = 0
 
 class _AsyncStep:
     def __init__(self, handler):
         self.handler = handler
+        self.duration_s = 0
 
 class _SleepStep:
     def __init__(self, duration_s):
         self.duration_s = duration_s
 
-
 class Script:
 
     def __init__(self):
         self.steps = []
+
+    @property
+    def duration_s(self):
+        return sum([step.duration_s for step in self.steps])
 
     def add_step_at_start(self, handler):
         self.steps.insert(0, _SyncStep(handler))
@@ -36,6 +41,7 @@ class Script:
 
     def add(self, script):
         self.steps.extend(script.steps)
+        return self
 
 def script_with_step(handler):
     return Script().add_step(handler)

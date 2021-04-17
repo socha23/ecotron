@@ -2,7 +2,7 @@ import board
 import neopixel
 import atexit
 from tick_aware import TickAware
-from value_source import SourceWatcherMixin, AlwaysOffSource, ConstantSource
+from value_source import SourceWatcherMixin, AlwaysOff, Constant
 
 
 class NeopixelStrip(TickAware):
@@ -56,8 +56,8 @@ class NeopixelSegment(SourceWatcherMixin):
         self._strip.set(self._offset, self._normalize_value(val))
 
     def off(self):
-        self.source = AlwaysOffSource()
+        self.source = AlwaysOff()
 
     def constant(self, val):
-        self.source = ConstantSource(val)
+        self.source = Constant(val)
 

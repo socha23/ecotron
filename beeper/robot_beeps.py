@@ -104,3 +104,13 @@ def random_sentence(min_len=2, max_len=10):
         beeps.append(random_beep())
     return BeepSentence(beeps)
 
+
+def random_sentence_of_duration(duration=3):
+    beeps = []
+    duration_left = duration
+    while duration_left > 0:
+        next_beep = random_beep()
+        duration_left -= next_beep.duration_s
+        beeps.append(next_beep)
+    return BeepSentence(beeps)
+

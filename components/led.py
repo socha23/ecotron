@@ -1,5 +1,5 @@
 from digitalio import Direction
-from value_source import AlwaysOnSource, AlwaysOffSource, SourceWatcherMixin, Blink
+from value_source import AlwaysOn, AlwaysOff, SourceWatcherMixin, Blink
 
 class PrimitiveLED:
     def __init__(self, pin):        
@@ -24,10 +24,10 @@ class LED(SourceWatcherMixin):
         self._primitive_led.value = val
 
     def on(self):
-        self.source = AlwaysOnSource()
+        self.source = AlwaysOn()
 
     def off(self):
-        self.source = AlwaysOffSource()
+        self.source = AlwaysOff()
 
     def blink(self, value = 1):
         self.source = Blink(value)
