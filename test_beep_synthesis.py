@@ -1,5 +1,9 @@
-from beeper.robot_beeps import random_sentence
+from sound import Clip
+
+#while True:
+    #random_sentence().play()
+    #input()
 
 while True:
-    random_sentence().play()
+    Clip("./resources/microwave_ding1.ogg", volume=0.2).play()
     input()

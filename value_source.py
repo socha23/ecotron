@@ -1,6 +1,6 @@
 import math
 import random
-
+from utils import translate
 from tick_aware import TickAware
 
 def is_number(val):
@@ -80,6 +80,43 @@ class RGB(Constant):
     def __init__(self, r, g, b):
         Constant.__init__(self, (r / 255, g / 255, b / 255))
 
+class Gradient(ValueSource):
+    
+    class _GradientDefinition:
+        def __init__(self, definition):
+            self._definition = definition
+
+        def _translate(self, current_t, t_from, t_to, val_from, val_to):
+            (r_from, g_from, b_from) = val_from
+            (r_to, g_to, b_to) = val_to
+            r = translate(current_t, t_from, t_to, r_from, r_to)
+            g = translate(current_t, t_from, t_to, g_from, g_to)
+            b = translate(current_t, t_from, t_to, b_from, b_to)
+            return (r, g, b)
+
+
+        def __getitem__(self, idx):
+            (current_step, current_value) = self._definition[0]
+
+            for (step, value) in self._definition:
+                if idx < step:
+                    return self._translate(idx, current_step, step, current_value.value(), value.value())
+                current_step = step
+                current_value = value
+            return current_value.value()
+
+    
+    def __init__(self, duration_s, gradient_defition):
+        ValueSource.__init__(self)
+        self._definition = Gradient._GradientDefinition(gradient_defition)
+        self._time_started = self.current_time()
+        self._duration_s = duration_s
+
+
+    def value(self):
+        phase = (self.current_time() - self._time_started) / self._duration_s
+        return self._definition[phase]
+
 
 class _Composite(ValueSource):
     def __init__(self, *sources):
@@ -153,6 +190,39 @@ class Blink(_Decorator):
             return 0
 
 
+class Flicker(_Decorator):
+    def __init__(self, amount=1, source=AlwaysOn()):
+        _Decorator.__init__(self, source)
+        self._last_flick_started = self.current_time()
+        self._next_flick_to_start = None
+        self._amount = amount
+
+    def value(self):
+        FLICK_TIME = 0.04
+        FLICK_PAUSE = max(0, (1 - self._amount)) * 2 + 0.5 # between 2.5 and 0.5
+        FLICK_REPEAT_CHANCE = 0.8
+        FLICK_PAUSE_BETWEEN_REPEATS = 0.04
+
+        t = self.current_time()
+
+        if self._last_flick_started and t <= self._last_flick_started + FLICK_TIME:
+            return (0, 0, 0)
+        elif self._last_flick_started and t > self._last_flick_started + FLICK_TIME:
+            self._last_flick_started = None
+            if random.random() < FLICK_REPEAT_CHANCE:
+                self._next_flick_to_start = t + FLICK_PAUSE_BETWEEN_REPEATS
+            else:
+                self._next_flick_to_start = t + random.uniform(0.5, FLICK_PAUSE) + random.uniform(0.5, FLICK_PAUSE)
+            return self._inner_source.value()
+        elif self._next_flick_to_start and self._next_flick_to_start <= t:
+            self._last_flick_started = t
+            self._next_flick_to_start = None
+            return (0, 0, 0)
+        else: 
+            return self._inner_source.value()
+
+
+
 def repeated_blink(how_many=3, duration=1, source=AlwaysOn()):
     return TimeConstrained(how_many * duration, Blink(duration, source))
 
@@ -168,7 +238,6 @@ class Sine(_Decorator):
         cycle_time = ((self.current_time() - self._phase_start) % self._time_s) / self._time_s
         multiplier = (math.sin(2 * math.pi * cycle_time) + 1) / 2
         val = multiply(self._inner_source.value(), multiplier)
-        print(f"cycle time: {cycle_time}, val {val}")
         return  val
 
 

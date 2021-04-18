@@ -24,6 +24,9 @@ class Hyperscanner:
     def status_success(self, duration_s=None):
         self._status_neopixel.source = value_source.repeated_blink(3, 0.5, self._scale_status(value_source.RGB(0, 255, 0)))
 
+    def run_gradient(self, gradient_defition, duration_s=3):
+        self._inner_neopixel.source = value_source.Gradient(duration_s, gradient_defition)
+
     def off(self):
         self._inner_neopixel.source = value_source.AlwaysOff()
         self.status_off()

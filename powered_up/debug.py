@@ -92,9 +92,9 @@ class DebugConnection:
         self.on_upstream_message(msg)
 
     def start_proxy_server(self):
+        ThreadingTCPServer.allow_reuse_address = True
         with ThreadingTCPServer(("localhost", self._proxy_port), ProxyServerHandler) as proxy_server:
             proxy_server.on_upstream_message = self._on_upstream_message
-            proxy_server.allow_reuse_address = True
             proxy_server.serve_forever()
 
     def replay_io(self):
