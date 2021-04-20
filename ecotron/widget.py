@@ -20,7 +20,7 @@ class Widget:
         if val:
             self.when_turn_on()
         else:
-            self.when_turn_off
+            self.when_turn_off()
 
     def turn_on(self):
         self.on = True

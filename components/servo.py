@@ -4,16 +4,18 @@ from time import sleep
 
 class Servo(TickAware):
 
+    MIN_DISTANCE = 3
+
     def __init__(self, servo_from_servokit, angle=90, min_angle=0, max_angle=180):        
         TickAware.__init__(self)
         self._servo = servo_from_servokit
-        self._servo.angle = angle
         atexit.register(self.close)
 
         self._angle = angle
         self.min_angle = min_angle
         self.max_angle = max_angle
-        self._move_started_on = None
+        self._move_started_on = self.current_time()
+        self._servo.angle = angle
 
     def tick(self, time, delta_s):
         HUSH_AFTER = 0.5
@@ -34,11 +36,14 @@ class Servo(TickAware):
     @angle.setter
     def angle(self, new_angle):
         if new_angle != None:
-            self._angle = min(self.max_angle, max(self.min_angle, new_angle))
-            self._move_started_on = self.current_time()
+            dest_angle = min(self.max_angle, max(self.min_angle, new_angle))
+            if abs(self._angle - dest_angle) > Servo.MIN_DISTANCE:
+                self._angle = dest_angle
+                self._servo.angle = dest_angle
+                self._move_started_on = self.current_time()
         else:
             self._angle = None
-        self._servo.angle = self._angle
+            self._servo.angle = None
        
 
     

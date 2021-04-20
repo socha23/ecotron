@@ -10,6 +10,7 @@ import value_source
 from director import Director
 from ecotron.conveyor import Conveyor, ConveyorControls
 from ecotron.elevator import Elevator, ElevatorControls
+from ecotron.fans import Fans
 from ecotron.bebop import Bebop
 from ecotron.hyperscanner import Hyperscanner
 from components.servo import Servo
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 class Ecotron:
     def __init__(self, hub):
         logger.info("*** Ecotron startup ***")
-        hub.wait_for_devices("A", "B", "D")
+        hub.wait_for_devices("A", "B", "C", "D")
 
 
         mcp23017a = MCP23017(I2C(board.SCL, board.SDA), address=0x20)
@@ -42,12 +43,13 @@ class Ecotron:
         scripter = Scripter(director, base, controls, master_controller)
         bind_controls(controls, base, master_controller, scripter)
         
-        base.floor_light.source = value_source.Wave(15, pixels_per_s=10, inner_source=value_source.RGB(0, 32, 0))
+        #base.floor_light.source = value_source.Wave(15, pixels_per_s=10, inner_source=value_source.RGB(0, 32, 0))
 
-        
+        base.fans.on = False
+
         DEFAULT_CONTROLLER.on = True
 
-        #say(SpeechLines.ECOTRON_READY)
+        say(SpeechLines.ECOTRON_READY)
         logger.info("*** Ecotron startup complete ***")
 
 class EcotronControls:
@@ -64,6 +66,7 @@ class EcotronBase:
             self.conveyor = Conveyor(hub.device("D"), controls.conveyor_controls, director)
             self.bebop = Bebop(director, Servo(servo_kit.servo[13]), PWMLED(servo_kit._pca.channels[14]))
             self.hyperscanner = Hyperscanner(NeopixelSegment(neopixels, 0, 1), NeopixelSegment(neopixels, 1, 1))
+            self.fans = Fans(hub.device("C"))
 
 
 class MasterController:
@@ -117,7 +120,8 @@ def bind_conveyor_controls(conveyor_controls, master_controller, base, scripter)
         if master_controller.calibration:
             base.conveyor.calibration_backward()
         else:
-            base.bebop.angle -= 30
+            print(f"toggling base fans on from {base.fans.on} ")
+            base.fans.on = not base.fans.on
 
     def green_pressed():
         if master_controller.calibration:
