@@ -27,7 +27,7 @@ class Conveyor(TickAware, Widget):
     # POS_PER_LINK = 131.5
     # 132 too much
     # smething started to suck, temp override
-    POS_PER_LINK = 134
+    POS_PER_LINK = 132
 
     LINKS_IN_CHAIN = 40
 

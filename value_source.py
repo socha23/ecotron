@@ -285,6 +285,9 @@ class SourceWatcherMixin:
     def source(self, new_source):
         self._source_watcher.source = new_source
 
+    def set_source(self, new_source):
+        self.source = new_source
+
 
 # deprecated
 class MultiplySource(ValueSource):

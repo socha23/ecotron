@@ -118,6 +118,20 @@ class TestDirector(unittest.TestCase):
             self.tick_aware_controller.tick(t)
         self.assertEqual(results, ["a", "b", "c", "d", "e", "f"])
 
+    def test_coexecute(self):
+        results = []        
+        self.director.execute(Script()
+            .add_parallel(
+                Script().add_sleep(1).add_step(lambda: results.append("a")),
+                Script().add_sleep(2).add_step(lambda: results.append("b")),
+                Script().add_sleep(3).add_step(lambda: results.append("c"))
+            )
+            .add_step(lambda: results.append("d"))
+        )
+
+        for t in range(6):
+            self.tick_aware_controller.tick(t)
+        self.assertEqual(results, ["a", "b", "c", "d"])
 
 
 class _AsyncJob(TickAware):

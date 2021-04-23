@@ -3,6 +3,7 @@ import value_source
 from value_source import RGB
 from sound import Clip
 import math
+import effects.electricity
 
 
 class Hyperscanner:
@@ -63,6 +64,9 @@ def _ultraviolet_script(hyperscanner, duration_s=5):
             )
     )).add_sleep(duration_s))
 
+def _lightning_script(hyperscanner, director, duration_s=5):
+    return effects.electricity.zap_script(hyperscanner._inner_neopixel, duration_s)    
+
 
 def scan_cycle_script(hyperscanner, duration=5):
 
@@ -81,7 +85,8 @@ def scan_cycle_script(hyperscanner, duration=5):
     s = (Script()
         .add_sleep(PHASE_0_TIME)
         .add_step(lambda: hyperscanner.status_busy(BUSY_TIME))
-        .add(_ultraviolet_script(hyperscanner, BUSY_TIME))
+    #    .add(_ultraviolet_script(hyperscanner, BUSY_TIME))
+        .add(_lightning_script(hyperscanner, BUSY_TIME))
         .add_sleep(PHASE_2_TIME)
         .add_step(hyperscanner.status_success)
         .add_sleep(PHASE_3_TIME)

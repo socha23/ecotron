@@ -1,4 +1,5 @@
 from beeper.synthesis import make_sample, make_clip, Sawtooth, Sine, Multiply, Const, Clip, Triangle, Square, ADSR, Add
+import beeper.synthesis2 as bs
 from random import randrange, choice, randint
 import logging
 import time
@@ -32,8 +33,8 @@ LENGTHS_AND_WEIGHTS = [ # short beeps more likely than long ones
 ]
 
 class Beep:
-    def __init__(self, sample, envelope, pitch, duration_s):
-        self.sample = sample
+    def __init__(self, sound, envelope, pitch, duration_s):
+        self.sound = sound
         self.envelope = envelope
         self.pitch = pitch
         self.duration_s = duration_s
@@ -45,18 +46,11 @@ logger = logging.getLogger("RobotBeeps")
 library_generation_start = time.time()
 for (length, weight) in LENGTHS_AND_WEIGHTS:
     beeps_of_length = []
-    adsr = ADSR(*[r * length for r in ADSR_RATIOS], *ADSR_ATT)
+    adsr = bs.adsr(length, *ADSR_RATIOS, *ADSR_ATT)
+    #adsr = ADSR(*[r * length for r in ADSR_RATIOS], *ADSR_ATT)
     for (pitch_idx, freq) in enumerate(FREQUENCIES):
-        generator = Multiply(
-            0.2,
-            Add(
-                Multiply(0.8, Triangle(freq)),
-                Multiply(0.2, Square(freq)),
-            ),
-            adsr
-        )
-        sample = make_sample(length, generator)
-        beep = Beep(sample, adsr, (pitch_idx + 1) / len(FREQUENCIES), length)
+        sound  = (bs.triangle(freq, length) * 0.8 + bs.square(freq, length) * 0.2) * adsr * 0.2
+        beep = Beep(sound, adsr, (pitch_idx + 1) / len(FREQUENCIES), length)
         beeps_of_length.append(beep)
     BEEPS.append(beeps_of_length)
     for _ in range(weight):
@@ -71,7 +65,7 @@ def random_beep(library=WEIGHTED_BEEPS):
 class BeepSentence:
     def __init__(self, beeps):
         self.beeps = beeps
-        self.clip = make_clip(*[b.sample for b in self.beeps])
+        self.clip = bs.make_clip(*[b.sound for b in self.beeps])
 
     def play(self, volume=1, on_complete=lambda:None):
         self.clip.volume = volume
@@ -86,7 +80,7 @@ class BeepSentence:
     def pitch_and_att(self, time_s):
         for b in self.beeps:
             if time_s < b.duration_s:
-                return (b.pitch, b.envelope[time_s])
+                return (b.pitch, b.envelope[int(time_s * bs.SAMPLE_RATE)])
             time_s -= b.duration_s
         return (0, 0)
     

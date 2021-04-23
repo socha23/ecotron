@@ -43,7 +43,7 @@ class Ecotron:
         scripter = Scripter(director, base, controls, master_controller)
         bind_controls(controls, base, master_controller, scripter)
         
-        #base.floor_light.source = value_source.Wave(15, pixels_per_s=10, inner_source=value_source.RGB(0, 32, 0))
+        base.floor_light.source = value_source.Wave(15, pixels_per_s=10, inner_source=value_source.RGB(0, 32, 0))
 
         base.fans.on = False
 
@@ -65,7 +65,7 @@ class EcotronBase:
 
             self.conveyor = Conveyor(hub.device("D"), controls.conveyor_controls, director)
             self.bebop = Bebop(director, Servo(servo_kit.servo[13]), PWMLED(servo_kit._pca.channels[14]))
-            self.hyperscanner = Hyperscanner(NeopixelSegment(neopixels, 0, 1), NeopixelSegment(neopixels, 1, 1))
+            self.hyperscanner = Hyperscanner(NeopixelSegment(neopixels, 1, 1), NeopixelSegment(neopixels, 0, 1))
             self.fans = Fans(hub.device("C"))
 
 
@@ -120,7 +120,6 @@ def bind_conveyor_controls(conveyor_controls, master_controller, base, scripter)
         if master_controller.calibration:
             base.conveyor.calibration_backward()
         else:
-            print(f"toggling base fans on from {base.fans.on} ")
             base.fans.on = not base.fans.on
 
     def green_pressed():

@@ -14,6 +14,11 @@ class _SleepStep:
     def __init__(self, duration_s):
         self.duration_s = duration_s
 
+class _ParallelStep:
+    def __init__(self, scripts):
+        self.scripts = scripts
+        self.duration_s = max([s.duration_s for s in scripts])
+
 class Script:
 
     def __init__(self):
@@ -39,9 +44,15 @@ class Script:
         self.steps.append(_SleepStep(duration_s))
         return self
 
+    def add_parallel(self, *scripts):
+        self.steps.append(_ParallelStep(scripts))
+        return self
+
     def add(self, script):
         self.steps.extend(script.steps)
         return self
+
+    
 
 def script_with_step(handler):
     return Script().add_step(handler)
@@ -53,6 +64,8 @@ class _ScriptRunner(TickAware):
     _STATE_SLEEPING = 1
     _STATE_WAITING_FOR_ASYNC_RETURN = 2
     _STATE_AFTER_ASYNC_RETURN = 3
+    _STATE_WAITING_FOR_SUBSCRIPTS_TO_FINISH = 4
+    _STATE_COMPLETE = 5
 
     def __init__(self, script, director, on_complete):
         TickAware.__init__(self, director._tick_aware_controller)
@@ -62,6 +75,7 @@ class _ScriptRunner(TickAware):
         self._on_complete = on_complete
         self._state = _ScriptRunner._STATE_RUNNING
         self._sleep_left = 0
+        self._subscript_runners = []
 
     def tick(self, cur_s, delta_s):
         self._proceed(delta_s)
@@ -84,6 +98,20 @@ class _ScriptRunner(TickAware):
         elif isinstance(current_step, _SyncStep):
             current_step.handler()
             self._current_step_finished(delta_s)
+        elif isinstance(current_step, _ParallelStep):
+            if self._state == _ScriptRunner._STATE_RUNNING:
+                self._state = _ScriptRunner._STATE_WAITING_FOR_SUBSCRIPTS_TO_FINISH
+                for s in current_step.scripts:
+                    self._subscript_runners.append(self._director.execute(s))
+            elif self._state == _ScriptRunner._STATE_WAITING_FOR_SUBSCRIPTS_TO_FINISH:
+                proceed = True
+                for runner in self._subscript_runners:
+                    if not runner.is_complete():
+                        proceed = False
+                if proceed:
+                    self._subscript_runners = []
+                    self._state = _ScriptRunner._STATE_RUNNING
+                    self._current_step_finished(delta_s)                    
         elif isinstance(current_step, _AsyncStep):
             if self._state == _ScriptRunner._STATE_RUNNING:
                 self._state = _ScriptRunner._STATE_WAITING_FOR_ASYNC_RETURN
@@ -91,7 +119,11 @@ class _ScriptRunner(TickAware):
             elif self._state == _ScriptRunner._STATE_AFTER_ASYNC_RETURN:
                 self._state = _ScriptRunner._STATE_RUNNING
                 self._current_step_finished(delta_s)
-            
+
+    def is_complete(self):
+        return self._state == _ScriptRunner._STATE_COMPLETE
+
+
     def _async_return(self):
         self._state = _ScriptRunner._STATE_AFTER_ASYNC_RETURN
 
@@ -100,6 +132,7 @@ class _ScriptRunner(TickAware):
         if self._current_step == len(self._script.steps):
             self.close()
             self._director._unregister_runner(self)
+            self._state = _ScriptRunner._STATE_COMPLETE
             self._on_complete()
         else: 
             self._proceed(delta_s)
@@ -123,6 +156,7 @@ class Director(TickAware):
     def execute(self, script, on_complete=lambda:None):
         runner = _ScriptRunner(script, self, on_complete)
         self._script_runners.add(runner)
+        return runner
 
 class ScriptQueue:
     def __init__(self, director, on_complete=lambda:None):
