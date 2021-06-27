@@ -13,6 +13,8 @@ from ecotron.elevator import Elevator, ElevatorControls
 from ecotron.fans import Fans
 from ecotron.bebop import Bebop
 from ecotron.hyperscanner import Hyperscanner
+from ecotron.properties import EcotronProperties
+from components.toggle import Toggle, ToggleBoard
 from components.servo import Servo
 from components.led import PWMLED
 from components.neopixels import NeopixelStrip, NeopixelSegment
@@ -20,6 +22,7 @@ from speech import say, SpeechLines
 from tick_aware import DEFAULT_CONTROLLER
 from ecotron.scripts import Scripter
 from speech import say, SpeechLines
+from sound import set_master_volume
 
 logger = logging.getLogger(__name__)
 
@@ -29,34 +32,44 @@ class Ecotron:
         hub.wait_for_devices("A", "B", "C", "D")
 
 
-        mcp23017a = MCP23017(I2C(board.SCL, board.SDA), address=0x20)
+        mcp23017a_1 = MCP23017(I2C(board.SCL, board.SDA), address=0x20)
+        mcp23017a_2 = MCP23017(I2C(board.SCL, board.SDA), address=0x21)
         spi = SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
         cs = DigitalInOut(board.D5)
         mcp3008a = MCP3008(spi, cs)
         servo_kit = ServoKit(channels=16, reference_clock_speed=25000000)
         neopixels = NeopixelStrip(board.D21, 29)
 
+        controls = EcotronControls(mcp23017a_1, mcp23017a_2, mcp3008a)
+        properties = EcotronProperties()
+
+        bind_controls_to_properties(controls, properties)
+
         director = Director()
-        controls = EcotronControls(mcp23017a, mcp3008a)
         base = EcotronBase(hub, servo_kit, neopixels, controls, director)
         master_controller = MasterController(base)
+
         scripter = Scripter(director, base, controls, master_controller)
-        bind_controls(controls, base, master_controller, scripter)
+
+        bind_properties_to_components(properties, base)
+        bind_controls_to_actions(controls, base, master_controller, scripter)
         
-        base.floor_light.source = value_source.Wave(15, pixels_per_s=10, inner_source=value_source.RGB(0, 32, 0))
-
-        base.fans.on = False
-
+        base.floor_light.source = value_source.Multiply(
+            value_source.Wave(15, pixels_per_s=10, inner_source=value_source.RGB(0, 32, 0)),
+            properties.light_strip_on
+        )
+        
         DEFAULT_CONTROLLER.on = True
 
         say(SpeechLines.ECOTRON_READY)
         logger.info("*** Ecotron startup complete ***")
 
 class EcotronControls:
-    def __init__(self, mcp23017a, mcp3008a):
-        self.elevator_controls = ElevatorControls(mcp23017a)
-        self.conveyor_controls = ConveyorControls(mcp23017a, mcp3008a)
-        
+    def __init__(self, mcp23017a_1, mcp23017a_2, mcp3008a):
+        self.elevator_controls = ElevatorControls(mcp23017a_1)
+        self.conveyor_controls = ConveyorControls(mcp23017a_1, mcp3008a)
+        self.toggle_board = ToggleBoard([Toggle(mcp23017a_2.get_pin(idx)) for idx in range(10)])
+
 
 class EcotronBase:
     def __init__(self, hub, servo_kit, neopixels, controls, director):
@@ -120,7 +133,7 @@ def bind_conveyor_controls(conveyor_controls, master_controller, base, scripter)
         if master_controller.calibration:
             base.conveyor.calibration_backward()
         else:
-            base.fans.on = not base.fans.on
+            base.bebop.angle -= 30
 
     def green_pressed():
         if master_controller.calibration:
@@ -143,9 +156,17 @@ def bind_conveyor_controls(conveyor_controls, master_controller, base, scripter)
         scripter.production_line.production_line_on()
 
 
+def bind_controls_to_properties(controls, properties):
+    
+    controls.toggle_board.toggles[0].bind_property(properties.master_volume)
+    controls.toggle_board.toggles[1].bind_property(properties.light_strip_on)
+    controls.toggle_board.toggles[2].bind_property(properties.fans_on)
 
+def bind_properties_to_components(properties, base):
+    properties.master_volume.on_value_change = lambda x : set_master_volume(x)
+    base.fans.bind_to_property(properties.fans_on)
 
-def bind_controls(controls, base, master_controller, scripter):
+def bind_controls_to_actions(controls, base, master_controller, scripter):
     bind_elevator(base.elevator, controls.elevator_controls)
     bind_conveyor_controls(controls.conveyor_controls, master_controller, base, scripter)
 

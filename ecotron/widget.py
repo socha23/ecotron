@@ -27,3 +27,6 @@ class Widget:
 
     def turn_off(self):
         self.on = False
+
+    def bind_to_property(self, property):
+        property.on_value_change = lambda x: self.turn_on() if x == 1 else self.turn_off()

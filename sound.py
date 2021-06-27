@@ -14,6 +14,10 @@ SAMPLE_RATE = mixer_settings[0]
 BITRATE = -mixer_settings[1]
 SAMPLE_MAX_VAL = 2**(BITRATE - 1) - 1
 
+_master_volume = 1
+
+active_clips = set()
+
 class Clip(TickAware):
   def __init__(self, path_or_sound, volume=1, stereo=None):
     TickAware.__init__(self)
@@ -32,12 +36,14 @@ class Clip(TickAware):
     self._intensity = None
 
   def play(self, on_complete=lambda:None):    
-    left, right = self._stereo
+    global _master_volume
+    self._sound.set_volume(_master_volume)
     self._channel = self._sound.play()
     if self._channel != None:
-      self._channel.set_volume(left * self.volume, right * self.volume)
+      self.update_channel_volume()
       self._on_complete = on_complete
       self._playing = True
+      active_clips.add(self)
 
   def duration_s(self):
     return self._sound.get_length()
@@ -45,6 +51,11 @@ class Clip(TickAware):
   def stop(self):
     self._sound.stop()
 
+  def update_channel_volume(self):
+      left, right = self._stereo
+      if self._channel != None:
+        self._channel.set_volume(left * self.volume * _master_volume, right * self.volume * _master_volume)
+    
   @property
   def volume(self):
     return self._volume
@@ -68,6 +79,7 @@ class Clip(TickAware):
     if self._playing:
       if self._channel == None or not self._channel.get_busy() or self._channel.get_sound() != self._sound:
         self._playing = False
+        active_clips.remove(self)
         if self._on_complete != None:
           self._on_complete()
 
@@ -143,3 +155,9 @@ def max_channels():
 def wait_until_end():
     while pygame.mixer.get_busy():
       time.sleep(0.2)
+
+def set_master_volume(volume):
+  global _master_volume
+  _master_volume = volume
+  for clip in active_clips:
+    clip.update_channel_volume()
