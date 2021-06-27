@@ -34,7 +34,7 @@ class Ecotron:
         cs = DigitalInOut(board.D5)
         mcp3008a = MCP3008(spi, cs)
         servo_kit = ServoKit(channels=16, reference_clock_speed=25000000)
-        neopixels = NeopixelStrip(board.D21, 17)
+        neopixels = NeopixelStrip(board.D21, 29)
 
         director = Director()
         controls = EcotronControls(mcp23017a, mcp3008a)
@@ -61,7 +61,7 @@ class EcotronControls:
 class EcotronBase:
     def __init__(self, hub, servo_kit, neopixels, controls, director):
             self.floor_light = NeopixelSegment(neopixels, 2, 15)
-            self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"))    
+            self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), NeopixelSegment(neopixels, 17, 12))
 
             self.conveyor = Conveyor(hub.device("D"), controls.conveyor_controls, director)
             self.bebop = Bebop(director, Servo(servo_kit.servo[13]), PWMLED(servo_kit._pca.channels[14]))

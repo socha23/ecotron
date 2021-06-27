@@ -17,20 +17,17 @@ def octave_down(scale):
 def scale_frequencies(scale, base):
     return [base * x for x in scale]
 
-FREQUENCIES = scale_frequencies(SCALE_PENTATONIC + octave_up(SCALE_PENTATONIC), 300)
-#FREQUENCIES = scale_frequencies(SCALE_JUST + octave_up(SCALE_JUST), 260)
+DEFAULT_SCALE = SCALE_PENTATONIC + octave_up(SCALE_PENTATONIC)
+DEFAULT_LENGTHS_AND_WEIGHTS = [ # short beeps more likely than long ones
+    (0.1,  4),
+    (0.20, 2),
+    (0.4, 1),
+]
 
 ADSR_RATIOS = [0.1, 0.2, 0.5, 0.2]
 ADSR_ATT = [1, 0.7]
 
-LENGTHS_AND_WEIGHTS = [ # short beeps more likely than long ones
-    (0.1,  12),
-    (0.15, 4),
-    (0.17, 2),
-    (0.20, 2),
-    (0.3, 1),
-    (0.4, 1),
-]
+DEFAULT_ADSR = [*ADSR_RATIOS, *ADSR_ATT]
 
 class Beep:
     def __init__(self, sound, envelope, pitch, duration_s):
@@ -38,29 +35,35 @@ class Beep:
         self.envelope = envelope
         self.pitch = pitch
         self.duration_s = duration_s
-        
-BEEPS = []
-WEIGHTED_BEEPS = []
 
-logger = logging.getLogger("RobotBeeps")
-library_generation_start = time.time()
-for (length, weight) in LENGTHS_AND_WEIGHTS:
-    beeps_of_length = []
-    adsr = bs.adsr(length, *ADSR_RATIOS, *ADSR_ATT)
-    #adsr = ADSR(*[r * length for r in ADSR_RATIOS], *ADSR_ATT)
-    for (pitch_idx, freq) in enumerate(FREQUENCIES):
-        sound  = (bs.triangle(freq, length) * 0.8 + bs.square(freq, length) * 0.2) * adsr * 0.2
-        beep = Beep(sound, adsr, (pitch_idx + 1) / len(FREQUENCIES), length)
-        beeps_of_length.append(beep)
-    BEEPS.append(beeps_of_length)
-    for _ in range(weight):
-        WEIGHTED_BEEPS.append(beeps_of_length)
-print(f"Robot beeps generated in {time.time() - library_generation_start}")
+class BeepLibrary:
+    def __init__(self, base_freq, name="Beeps library", scale=DEFAULT_SCALE, lengths_and_weights = DEFAULT_LENGTHS_AND_WEIGHTS, adsr_def=DEFAULT_ADSR):
+        self._logger = logging.getLogger("RobotBeeps")
+        self._beeps = []
+        self._name = name
+        self._weighted_beeps = []
+        self._generate_beeps(base_freq, scale, lengths_and_weights, adsr_def)
 
-def random_beep(library=WEIGHTED_BEEPS):
-    row = choice(library) 
-    val_idx = int((randrange(len(row)) + randrange(len(row))) / 2) # poor man's gauss
-    return row[val_idx]
+    def _generate_beeps(self, base_freq, scale, lengths_and_weights, adsr_def):
+        frequencies = scale_frequencies(scale, base_freq)
+        library_generation_start = time.time()
+        for (length, weight) in lengths_and_weights:
+            beeps_of_length = []
+            adsr = bs.adsr(length, *adsr_def)
+            for (pitch_idx, freq) in enumerate(frequencies):
+                sound  = (bs.triangle(freq, length) * 0.8 + bs.square(freq, length) * 0.2) * adsr * 0.2
+                beep = Beep(sound, adsr, (pitch_idx + 1) / len(frequencies), length)
+                beeps_of_length.append(beep)
+            self._beeps.append(beeps_of_length)
+            for _ in range(weight):
+                self._weighted_beeps.append(beeps_of_length)
+        self._logger.info(f"Beeps library {self._name} generated in {time.time() - library_generation_start}")
+
+    def random_beep(self):
+        row = choice(self._weighted_beeps) 
+        val_idx = int((randrange(len(row)) + randrange(len(row))) / 2) # poor man's gauss
+        return row[val_idx]
+
 
 class BeepSentence:
     def __init__(self, beeps):
@@ -90,20 +93,21 @@ class BeepSentence:
     def att(self, time_s):
         return self.pitch_and_att(time_s)[1]
 
+VOICE_BEBOP = BeepLibrary(300, "bebob")
 
-def random_sentence(min_len=2, max_len=10):
+def random_sentence(min_len=2, max_len=10, voice=VOICE_BEBOP):
     length = randint(min_len, max_len)
     beeps = []
     for _ in range(length):
-        beeps.append(random_beep())
+        beeps.append(voice.random_beep())
     return BeepSentence(beeps)
 
 
-def random_sentence_of_duration(duration=3):
+def random_sentence_of_duration(duration=3, voice=VOICE_BEBOP):
     beeps = []
     duration_left = duration
     while duration_left > 0:
-        next_beep = random_beep()
+        next_beep = voice.random_beep()
         duration_left -= next_beep.duration_s
         beeps.append(next_beep)
     return BeepSentence(beeps)

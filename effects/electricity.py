@@ -17,8 +17,6 @@ class ZapSource(value_source._Composite):
 
     
     def set_inner_source(self, idx, source):
-        if self._inner_sources[idx] != None:
-            self._inner_sources[idx].close()
         self._inner_sources[idx] = source
 
     def value(self):

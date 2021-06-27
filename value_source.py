@@ -1,7 +1,7 @@
 import math
 import random
 from utils import translate
-from tick_aware import TickAware
+from tick_aware import TickAware, TimeAware
 
 def is_number(val):
     return isinstance(val, int) or isinstance(val, float)
@@ -40,18 +40,88 @@ def multiply(value, multiplier):
     else:
         raise f"Cannot multiply {value} by {multiplier}"
         
-class ValueSource(TickAware):
+
+def clamp(value, min_value=0, max_value=1):
+    if is_number(value):
+        return min(max_value, max(min_value, value))
+    elif is_list(value):
+        return [clamp(v, min_value, max_value) for v in value]
+    elif is_tuple(value):
+        return tuple(clamp(list(value), min_value, max_value))
+    else:
+        raise f"Cannot clamp {value}"
+
+
+
+def add(value, other):
+    # scalar add
+    if is_number(value) and is_number(other):
+        return value + other
+    # vector add
+    elif is_list(value) and is_list(other):
+        return [add(x, other[idx]) for idx, x in enumerate(value)]
+    # list x scalar
+    elif is_list(value) and is_number(other):
+        return [add(x, other) for x in value]
+    # scalar x list
+    elif is_number(value) and is_list(other):
+        return add(other, value)
+    # tuple x scalar
+    elif is_tuple(value) and is_number(other):
+        return tuple(add(list(value), other))
+    # scalar x tuple
+    elif is_number(value) and is_tuple(other):
+        return add(other, value)
+    # tuple x list
+    elif is_tuple(value) and is_list(other):
+        return [add(value, x) for x in other]
+    # list x tuple
+    elif is_list(value) and is_tuple(other):
+        return add(other, value)
+    # tuple x tuple
+    elif is_tuple(value) and is_tuple(other):
+        return tuple(add(list(value), list(other)))
+    else:
+        raise Exception(f"Cannot add {value} and {other}")
+
+
+def ultra_max(value, other):
+    # scalar max
+    if is_number(value) and is_number(other):
+        return max(value, other)
+    # vector 
+    elif is_list(value) and is_list(other):
+        return [ultra_max(x, other[idx]) for idx, x in enumerate(value)]
+    # list x scalar
+    elif is_list(value) and is_number(other):
+        return [ultra_max(x, other) for x in value]
+    # scalar x list
+    elif is_number(value) and is_list(other):
+        return ultra_max(other, value)
+    # tuple x scalar
+    elif is_tuple(value) and is_number(other):
+        return tuple(ultra_max(list(value), other))
+    # scalar x tuple
+    elif is_number(value) and is_tuple(other):
+        return ultra_max(other, value)
+    # tuple x list
+    elif is_tuple(value) and is_list(other):
+        return [ultra_max(value, x) for x in other]
+    # list x tuple
+    elif is_list(value) and is_tuple(other):
+        return ultra_max(other, value)
+    # tuple x tuple
+    elif is_tuple(value) and is_tuple(other):
+        return tuple(ultra_max(list(value), list(other)))
+    else:
+        raise Exception(f"Cannot max {value} and {other}")
+
+class ValueSource(TimeAware):
     def __init__(self):
-        TickAware.__init__(self)
+        TimeAware.__init__(self)
 
     def value(self):
         return 1
-
-    def tick(self, cur_s, delta_s):
-        pass
-
-    def close(self):
-        TickAware.close(self)
 
 
 class Constant:
@@ -61,8 +131,24 @@ class Constant:
     def value(self):
         return self._val
 
-    def close(self):
-        pass
+class RepeatedConstant:
+    def __init__(self, val, repeats = 1):
+        self._val = [val] * repeats
+
+    def value(self):
+        return self._val
+
+
+class SettableSource:
+    def __init__(self, val=0):
+        self._value = val
+
+    def value(self):
+        return self._value
+
+    def set_value(self, value):
+        self._value = value
+
 
 
 class AlwaysOn(Constant):
@@ -80,35 +166,36 @@ class RGB(Constant):
     def __init__(self, r, g, b):
         Constant.__init__(self, (r / 255, g / 255, b / 255))
 
+
+class GradientDefinition:
+    def __init__(self, definition):
+        self._definition = definition
+
+    def _translate(self, current_t, t_from, t_to, val_from, val_to):
+        (r_from, g_from, b_from) = val_from
+        (r_to, g_to, b_to) = val_to
+        r = translate(current_t, t_from, t_to, r_from, r_to)
+        g = translate(current_t, t_from, t_to, g_from, g_to)
+        b = translate(current_t, t_from, t_to, b_from, b_to)
+        return (r, g, b)
+
+
+    def __getitem__(self, idx):
+        (current_step, current_value) = self._definition[0]
+
+        for (step, value) in self._definition:
+            if idx < step:
+                return self._translate(idx, current_step, step, current_value.value(), value.value())
+            current_step = step
+            current_value = value
+        return current_value.value()
+
+
 class Gradient(ValueSource):
-    
-    class _GradientDefinition:
-        def __init__(self, definition):
-            self._definition = definition
-
-        def _translate(self, current_t, t_from, t_to, val_from, val_to):
-            (r_from, g_from, b_from) = val_from
-            (r_to, g_to, b_to) = val_to
-            r = translate(current_t, t_from, t_to, r_from, r_to)
-            g = translate(current_t, t_from, t_to, g_from, g_to)
-            b = translate(current_t, t_from, t_to, b_from, b_to)
-            return (r, g, b)
-
-
-        def __getitem__(self, idx):
-            (current_step, current_value) = self._definition[0]
-
-            for (step, value) in self._definition:
-                if idx < step:
-                    return self._translate(idx, current_step, step, current_value.value(), value.value())
-                current_step = step
-                current_value = value
-            return current_value.value()
-
     
     def __init__(self, duration_s, gradient_defition):
         ValueSource.__init__(self)
-        self._definition = Gradient._GradientDefinition(gradient_defition)
+        self._definition = GradientDefinition(gradient_defition)
         self._time_started = self.current_time()
         self._duration_s = duration_s
 
@@ -126,11 +213,6 @@ class _Composite(ValueSource):
     def value(self):
         raise "Not implemented"
 
-    def close(self):
-        ValueSource.close(self)
-        for s in self._inner_sources:
-            s.close()
-
 
 class _Decorator(ValueSource):
     def __init__(self, source=AlwaysOn()):
@@ -139,10 +221,6 @@ class _Decorator(ValueSource):
 
     def value(self):
         raise "Not implemented"
-
-    def close(self):        
-        ValueSource.close(self)
-        self._inner_source.close()
 
 
 class Multiply(_Composite):
@@ -155,6 +233,40 @@ class Multiply(_Composite):
             val = multiply(val, s.value())
         return val
 
+class Add(_Composite):
+    def __init__(self, *factors, min_value=0, max_value=1):
+        _Composite.__init__(self, *factors)
+        self._min_value=min_value
+        self._max_value=max_value
+
+    def value(self):
+        val = 0
+        for s in self._inner_sources:
+            val = add(val, s.value())
+        return clamp(val, self._min_value, self._max_value)
+
+class Max(_Composite):
+    def __init__(self, *factors):
+        _Composite.__init__(self, *factors)
+
+    def value(self):
+        val = 0
+        for s in self._inner_sources:
+            val = ultra_max(val, s.value())
+        return val
+
+
+class Concat(_Composite):
+    def __init__(self, *factors):
+        _Composite.__init__(self, *factors)
+
+    def value(self):
+        val = []
+        for s in self._inner_sources:
+            val += s.value()
+        return val
+
+
 class TimeConstrained(_Decorator):
     def __init__(self, duration_s=1, source=AlwaysOn()):
         _Decorator.__init__(self, source)
@@ -165,6 +277,47 @@ class TimeConstrained(_Decorator):
             return 0
         else:
             return self._inner_source.value()
+
+class FadeInFadeOut(ValueSource):
+
+    STATE_ON = 1
+    STATE_FADE_OUT = 2
+    STATE_OFF = 3
+    STATE_FADE_IN = 4
+
+    def __init__(self, duration_s=1, state_on=True):
+        ValueSource.__init__(self)
+        self._state = FadeInFadeOut.STATE_ON if state_on else FadeInFadeOut.STATE_OFF
+        self._transition_start = 0
+        self._duration_s = duration_s
+
+    def fade_in(self):
+        self._transition_start = self.current_time()
+        self._state = FadeInFadeOut.STATE_FADE_IN
+
+    def fade_out(self):
+        self._transition_start = self.current_time()
+        self._state = FadeInFadeOut.STATE_FADE_OUT
+
+    def value(self):
+        if self._state == FadeInFadeOut.STATE_ON:
+            return 1
+        elif self._state == FadeInFadeOut.STATE_OFF:
+            return 0
+        else:
+            phase = (self.current_time() - self._transition_start) /  self._duration_s
+            if self._state == FadeInFadeOut.STATE_FADE_IN:
+                if phase > 1:
+                    self._state = FadeInFadeOut.STATE_ON
+                    return 1
+                else:
+                    return phase
+            else: # self._state == FadeInFadeOut.STATE_FADE_IN:
+                if phase > 1:
+                    self._state = FadeInFadeOut.STATE_OFF
+                    return 0
+                else:
+                    return 1 - phase
 
 class Blink(_Decorator):
     def __init__(self, duration=1, source=AlwaysOn()):
@@ -261,13 +414,7 @@ class SourceWatcher(TickAware):
 
     @source.setter
     def source(self, new_source):
-        if self._current_source != None:
-            self._current_source.close()
         self._current_source = new_source
-
-    def close(self):
-        if self._current_source != None:
-            self._current_source.close()
 
 
 class SourceWatcherMixin:
@@ -299,10 +446,6 @@ class MultiplySource(ValueSource):
     def value(self):
         return self._inner_source.value() * self._multiplier
 
-    def close(self):
-        self._inner_source.close()
-        ValueSource.close(self)
-
 
 
 # pixel strip only - running 'wave', left-to-right
@@ -320,10 +463,6 @@ class Wave(ValueSource):
         current_phase = (self.current_time() * self._pixels_per_s + self._phase) % self._spread
         mask = wave_mask(self._size, self._spread, current_phase, wave_width=self._wave_width)
         return multiply(self._inner_source.value(), mask)
-        
-    def close(self):
-        self._inner_source.close()
-        ValueSource.close(self)
 
 
 def wave_mask(size, spread, phase, wave_width=2):

@@ -40,6 +40,14 @@ class TickAwareController:
 
 DEFAULT_CONTROLLER = TickAwareController()
 
+class TimeAware:
+    def __init__(self, controller=DEFAULT_CONTROLLER):
+        self._tick_aware_controller = controller
+
+    def current_time(self):
+        return self._tick_aware_controller.current_time()
+
+
 class TickAware:
     def __init__(self, controller=DEFAULT_CONTROLLER):
         self._tick_aware_controller = controller
