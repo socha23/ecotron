@@ -46,7 +46,7 @@ class Ecotron:
         bind_controls_to_properties(controls, properties)
 
         director = Director()
-        base = EcotronBase(hub, servo_kit, neopixels, controls, director)
+        base = EcotronBase(hub, servo_kit, neopixels, controls, director, properties)
         master_controller = MasterController(base)
 
         scripter = Scripter(director, base, controls, master_controller)
@@ -72,9 +72,9 @@ class EcotronControls:
 
 
 class EcotronBase:
-    def __init__(self, hub, servo_kit, neopixels, controls, director):
+    def __init__(self, hub, servo_kit, neopixels, controls, director, ecotron_properties):
             self.floor_light = NeopixelSegment(neopixels, 2, 15)
-            self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), NeopixelSegment(neopixels, 17, 12))
+            self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), NeopixelSegment(neopixels, 17, 12), ecotron_properties)
 
             self.conveyor = Conveyor(hub.device("D"), controls.conveyor_controls, director)
             self.bebop = Bebop(director, Servo(servo_kit.servo[13]), PWMLED(servo_kit._pca.channels[14]))
@@ -161,6 +161,7 @@ def bind_controls_to_properties(controls, properties):
     controls.toggle_board.toggles[0].bind_property(properties.master_volume)
     controls.toggle_board.toggles[1].bind_property(properties.light_strip_on)
     controls.toggle_board.toggles[2].bind_property(properties.fans_on)
+    controls.toggle_board.toggles[3].bind_property(properties.elevator_lights_on)
 
 def bind_properties_to_components(properties, base):
     properties.master_volume.on_value_change = lambda x : set_master_volume(x)

@@ -33,7 +33,7 @@ class Elevator:
     CLIP_DING = Clip("./resources/elevator_ding2.ogg")
     CLIP_DOOR = Clip("./resources/elevator_door1.ogg", volume=0.6)
 
-    def __init__(self, director, controls, motor, neopixels):
+    def __init__(self, director, controls, motor, neopixels, ecotron_properties):
 
         self._director = director
         self._motor = motor
@@ -43,9 +43,11 @@ class Elevator:
         self._queued_floors = []
         self._controls = controls
 
+        self._motor.set_feedback_mode(10)
+
         self.reset()
 
-        neopixels.source = ElevatorLightStripValueSource(neopixels.size(), self._motor)
+        neopixels.source = ElevatorLightStripValueSource(neopixels.size(), self._motor, ecotron_properties.elevator_lights_on)
 
     def go_floor_up(self):
         if self._last_target() < len(Elevator.FLOOR_HEIGHTS) - 1:
@@ -136,7 +138,7 @@ class Elevator:
 
 class ElevatorLightStripValueSource(ValueSource):
 
-    def __init__(self, size, motor, pos_per_px=240, height=3):
+    def __init__(self, size, motor, lights_on_property, pos_per_px=240, height=3):
         ValueSource.__init__(self)
 
         self._position_value_source = ElevatorPositionValueSource(size, motor, pos_per_px, height)
@@ -146,8 +148,8 @@ class ElevatorLightStripValueSource(ValueSource):
         self._movement_fade = FadeInFadeOut(0.5, False)
 
         self._inner_source = Max(
-            Multiply(self._position_fade, self._position_value_source, RGB(0, 50, 0)),
-            Multiply(self._movement_fade, self._movement_source, RGB(0, 64, 64))
+            Multiply(self._position_fade, self._position_value_source, RGB(0, 50, 0), lights_on_property),
+            Multiply(self._movement_fade, self._movement_source, RGB(0, 64, 64), lights_on_property)
         )
 
     def value(self):

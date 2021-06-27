@@ -27,7 +27,7 @@ class Conveyor(TickAware, Widget):
     # POS_PER_LINK = 131.5
     # 132 too much
     # smething started to suck, temp override
-    POS_PER_LINK = 132
+    POS_PER_LINK = 140
 
     LINKS_IN_CHAIN = 40
 
@@ -39,11 +39,13 @@ class Conveyor(TickAware, Widget):
         Widget.__init__(self)
         self._director = director
         self._motor = motor
+        self._motor.set_feedback_mode(1)
         motor.reset_position(0)
         self._current_position = 0
         self._state = Conveyor.STATE_WAITING
         self._controls = controls        
         self._last_move_start_pos = None
+
 
     def move_links(self, links, speed=0.5, callback=lambda:None):
         if not speed:

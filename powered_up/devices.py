@@ -62,14 +62,19 @@ class Motor:
         self.set_port(port)
         self._command_in_progress = False
         self.on_position_changed = lambda _: None
+        self._feedback_mode = False
 
     def set_port(self, port):
         self._port = port
-        self._port.set_mode(self.MODE_ANGLE_SENSOR, 1, True) 
+
+    def set_feedback_mode(self, delta_interval=1):
+        self._feedback_mode = True
+        self._port.set_mode(self.MODE_ANGLE_SENSOR, delta_interval, True) 
         self._port.send(PortValueRequest(self._port.port_id()))        
 
+
     def is_initialized(self):
-        return self._motor_pos != None
+        return self._feedback_mode == False or self._motor_pos != None
 
     def set_acc_time(self, acc_time_s):
         self._port.send(MotorSetAccTime(self._port.port_id(), acc_time_s * 1000))
@@ -126,6 +131,12 @@ class Motor:
         return self._logical_pos
 
     def reset_position(self, position=0):
+        if self._feedback_mode == True:
+            while self._motor_pos == None:
+                sleep(0.1)
+        if self._feedback_mode == False and self._motor_pos == None:
+            self._motor_pos = 0
+
         self._logical_pos = position
         self._logical_pos_delta = position - self._motor_pos
 
