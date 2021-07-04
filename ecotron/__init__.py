@@ -17,7 +17,7 @@ from ecotron.properties import EcotronProperties
 from components.toggle import Toggle, ToggleBoard
 from components.servo import Servo
 from components.led import PWMLED
-from components.neopixels import NeopixelStrip, NeopixelSegment
+from components.neopixels import NeopixelStrip, NeopixelSegment, NeopixelMultiSegment, FakeNeopixels, Neopixels
 from speech import say, SpeechLines
 from tick_aware import DEFAULT_CONTROLLER
 from ecotron.scripts import Scripter
@@ -38,7 +38,7 @@ class Ecotron:
         cs = DigitalInOut(board.D5)
         mcp3008a = MCP3008(spi, cs)
         servo_kit = ServoKit(channels=16, reference_clock_speed=25000000)
-        neopixels = NeopixelStrip(board.D21, 29)
+        neopixels = NeopixelStrip(board.D21, 32)
 
         controls = EcotronControls(mcp23017a_1, mcp23017a_2, mcp3008a)
         properties = EcotronProperties()
@@ -55,7 +55,7 @@ class Ecotron:
         bind_controls_to_actions(controls, base, master_controller, scripter)
         
         base.floor_light.source = value_source.Multiply(
-            value_source.Wave(15, pixels_per_s=10, inner_source=value_source.RGB(0, 32, 0)),
+            value_source.Wave(base.floor_light.size(), pixels_per_s=10, inner_source=value_source.RGB(32, 0, 16)),
             properties.light_strip_on
         )
         
@@ -73,8 +73,19 @@ class EcotronControls:
 
 class EcotronBase:
     def __init__(self, hub, servo_kit, neopixels, controls, director, ecotron_properties):
-            self.floor_light = NeopixelSegment(neopixels, 2, 15)
-            self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), NeopixelSegment(neopixels, 17, 12), ecotron_properties)
+            
+            #, FakeNeopixels(1), Neopixels(neopixels, 18, 2)
+            
+            fl_1_1 = Neopixels(neopixels, 2, 15)
+            np_machine = Neopixels(neopixels, 17, 1)
+            fl_1_2 = Neopixels(neopixels, 18, 2)
+            np_elevator = NeopixelSegment(neopixels, 20, 12)
+
+# neopixel 16 = machoine
+
+            self.floor_light = NeopixelMultiSegment(fl_1_1, FakeNeopixels(2), fl_1_2)
+
+            self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), NeopixelSegment(neopixels, 20, 12), ecotron_properties)
 
             self.conveyor = Conveyor(hub.device("D"), controls.conveyor_controls, director)
             self.bebop = Bebop(director, Servo(servo_kit.servo[13]), PWMLED(servo_kit._pca.channels[14]))
