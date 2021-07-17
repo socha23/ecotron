@@ -28,6 +28,7 @@ class ProductionLineScripter(TickAware):
         self._director = director
         
         self._conveyor = base.conveyor
+        self._conveyor_receiver = base.conveyor_receiver
         self._bebop = base.bebop
         self._hyperscanner = base.hyperscanner
 
@@ -94,6 +95,7 @@ class ProductionLineScripter(TickAware):
     def _enter_phase_1(self):
         self.phase = 1
         self._conveyor.move_links(ProductionLineScripter.P1_LINKS, self._zero_safe_speed(), self._enter_phase_2)
+        OnPhaseLauncher(self._conveyor, 0.5, lambda: self._conveyor_receiver.flash_ok())
 
     def _enter_phase_2(self):
         self.phase = 2
@@ -124,4 +126,15 @@ class ProductionLineScripter(TickAware):
         self._production_line_on = False
 
 
-    
+class OnPhaseLauncher(TickAware):
+    def __init__(self, conveyor, phase, on_phase_reached):
+        TickAware.__init__(self)
+        self._phase = phase
+        self._conveyor = conveyor
+        self._on_phase_reached = on_phase_reached
+
+    def tick(self, time_s, duration_s):
+        if self._conveyor.phase() > self._phase:
+            self.close()
+            self._on_phase_reached()
+

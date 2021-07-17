@@ -379,6 +379,8 @@ class Flicker(_Decorator):
 def repeated_blink(how_many=3, duration=1, source=AlwaysOn()):
     return TimeConstrained(how_many * duration, Blink(duration, source))
 
+def repeated_pulse(how_many=3, duration=1, source=AlwaysOn()):
+    return TimeConstrained(how_many * duration, Sine(duration, source, common_phase=False))
 
 # sine pulse
 class Sine(_Decorator):

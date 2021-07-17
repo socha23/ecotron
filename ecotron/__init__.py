@@ -1,3 +1,4 @@
+from ecotron.conveyor_receiver import ConveyorReceiver
 import board
 from busio import I2C, SPI
 from digitalio import DigitalInOut
@@ -55,7 +56,7 @@ class Ecotron:
         bind_controls_to_actions(controls, base, master_controller, scripter)
         
         base.floor_light.source = value_source.Multiply(
-            value_source.Wave(base.floor_light.size(), pixels_per_s=10, inner_source=value_source.RGB(32, 0, 16)),
+            value_source.Wave(base.floor_light.size(), pixels_per_s=10, inner_source=value_source.RGB(32, 32, 20)),
             properties.light_strip_on
         )
         
@@ -77,7 +78,7 @@ class EcotronBase:
             #, FakeNeopixels(1), Neopixels(neopixels, 18, 2)
             
             fl_1_1 = Neopixels(neopixels, 2, 15)
-            np_machine = Neopixels(neopixels, 17, 1)
+            np_conveyor_receiver = NeopixelSegment(neopixels, 17, 1)
             fl_1_2 = Neopixels(neopixels, 18, 2)
             np_elevator = NeopixelSegment(neopixels, 20, 12)
 
@@ -90,6 +91,8 @@ class EcotronBase:
             self.conveyor = Conveyor(hub.device("D"), controls.conveyor_controls, director)
             self.bebop = Bebop(director, Servo(servo_kit.servo[13]), PWMLED(servo_kit._pca.channels[14]))
             self.hyperscanner = Hyperscanner(NeopixelSegment(neopixels, 1, 1), NeopixelSegment(neopixels, 0, 1))
+            self.conveyor_receiver = ConveyorReceiver(np_conveyor_receiver)
+
             self.fans = Fans(hub.device("C"))
 
 

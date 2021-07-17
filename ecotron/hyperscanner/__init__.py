@@ -28,7 +28,7 @@ class Hyperscanner:
 
     def status_success(self, duration_s=None):
         Hyperscanner.CLIP_DING.play()
-        self._status_neopixel.source = value_source.repeated_blink(3, 0.5, self._scale_status(value_source.RGB(0, 255, 0)))
+        self._status_neopixel.source = value_source.repeated_pulse(3, 0.5, self._scale_status(value_source.RGB(0, 255, 0)))
 
     def run_inner_source(self, source):
         self._inner_neopixel.source = source

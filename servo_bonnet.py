@@ -2,6 +2,7 @@ from adafruit_servokit import ServoKit
 from time import sleep
 from adafruit_pca9685 import PCA9685
 import board
+import random
 
 #pca = PCA9685(board.I2C())
 #pca.frequency = 50
@@ -19,17 +20,25 @@ import board
 
 #pca.channels[0].duty_cycle = 0x0000
 
-kit = ServoKit(channels=16, reference_clock_speed=25000000)
-kit.continuous_servo[0].set_pulse_width_range(1560, 2114)
+kit = ServoKit(channels=16, address=0x41)
+
+while True:
+  angle = random.randrange(180)
+  kit.servo[0].angle = angle
+  print(f"Setting angle {angle}")
+  sleep(1)
+  kit.servo[0].angle = None
+  input()
+
 
 #NEUTRAL = 132
 
 
-kit.continuous_servo[0].throttle = 1
+#kit.continuous_servo[0].throttle = 1
 
-sleep(5)
+#sleep(5)
 
-kit.continuous_servo[0].throttle = 0
+#kit.continuous_servo[0].throttle = 0
 
 # nice settings for small servo running as 360:
 #

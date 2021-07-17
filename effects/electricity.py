@@ -6,10 +6,6 @@ import random
 
 ELECTRICITY_ZAP_CLIPS = [Clip(path) for path in glob.glob("./resources/electric_zap_*.ogg")]
 
-#LONG_ZAPS = [Clip("./resources/electric_zap3.ogg"), Clip("./resources/electric_zap3.ogg"), Clip("./resources/electric_zap3.ogg")]
-
-
-
 class ZapSource(value_source._Composite):
     def __init__(self, max_sources = 4):
         value_source._Composite.__init__(self)
@@ -24,7 +20,6 @@ class ZapSource(value_source._Composite):
 
 
 def _run_zap(clip, channel, zap_source):
-    print("ZAP")
     clip.play()
     zap_source.set_inner_source(channel, clip.intensity_source())
 
