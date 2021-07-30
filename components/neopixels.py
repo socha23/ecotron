@@ -29,7 +29,8 @@ class NeopixelStrip(TickAware):
         self._value[offset:(offset + len(values))] = [(int(r * 255), int(g * 255), int(b * 255)) for (r, g, b) in values]
 
 class Neopixels:
-    def __init__(self, strip, offset, pixel_count):
+    def __init__(self, strip, offset, pixel_count, reversed=False):
+        self._reversed = reversed
         self._strip = strip
         self._offset = offset
         self._pixel_count = pixel_count
@@ -45,6 +46,10 @@ class Neopixels:
             if not isinstance(v, tuple):
                 v = (v, v, v)
             result.append(v)
+
+        if self._reversed:
+            result.reverse()
+        
         return result
 
     def size(self):
@@ -82,7 +87,6 @@ class NeopixelSegment(SourceWatcherMixin):
 
     def size(self):
         return self._neopixels.size()
-
 
 
 class NeopixelMultiSegment(SourceWatcherMixin):

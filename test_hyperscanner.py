@@ -8,7 +8,7 @@ import time
 from value_source import RGB
 #from effects.electricity import zap
 
-neopixels = NeopixelStrip(board.D21, 17)
+neopixels = NeopixelStrip(board.D21, 30)
 
 director = Director()
 

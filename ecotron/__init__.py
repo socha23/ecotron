@@ -39,7 +39,7 @@ class Ecotron:
         cs = DigitalInOut(board.D5)
         mcp3008a = MCP3008(spi, cs)
         servo_kit = ServoKit(channels=16, reference_clock_speed=25000000)
-        neopixels = NeopixelStrip(board.D21, 32)
+        neopixels = NeopixelStrip(board.D21, 45)
 
         controls = EcotronControls(mcp23017a_1, mcp23017a_2, mcp3008a)
         properties = EcotronProperties()
@@ -60,6 +60,11 @@ class Ecotron:
             properties.light_strip_on
         )
         
+        base.door_light.source = value_source.Multiply(
+            value_source.RGB(20, 30, 60), 
+            properties.door_lights_on
+        )
+
         DEFAULT_CONTROLLER.on = True
 
         say(SpeechLines.ECOTRON_READY)
@@ -77,20 +82,31 @@ class EcotronBase:
             
             #, FakeNeopixels(1), Neopixels(neopixels, 18, 2)
             
-            fl_1_1 = Neopixels(neopixels, 2, 15)
-            np_conveyor_receiver = NeopixelSegment(neopixels, 17, 1)
-            fl_1_2 = Neopixels(neopixels, 18, 2)
-            np_elevator = NeopixelSegment(neopixels, 20, 12)
+
+
+            np_fl_1_1 = Neopixels(neopixels, 0, 1)
+            np_hyperscanner_inner = NeopixelSegment(neopixels, 2, 1)
+            np_hyperscanner_outer = NeopixelSegment(neopixels, 1, 1)
+            np_fl_1_2 = Neopixels(neopixels, 3, 15)
+            np_conveyor_receiver = NeopixelSegment(neopixels, 18, 1)
+            np_fl_1_3 = Neopixels(neopixels, 19, 2)
+
+            np_fl_2_1 = Neopixels(neopixels, 21, 10, reversed=True)
+            np_door = Neopixels(neopixels, 31, 3)
+
+            np_elevator = NeopixelSegment(neopixels, 34, 12)
 
 # neopixel 16 = machoine
 
-            self.floor_light = NeopixelMultiSegment(fl_1_1, FakeNeopixels(2), fl_1_2)
+            self.door_light = NeopixelMultiSegment(np_door)
 
-            self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), NeopixelSegment(neopixels, 20, 12), ecotron_properties)
+            self.floor_light = NeopixelMultiSegment(np_fl_1_1, FakeNeopixels(2), np_fl_1_2, FakeNeopixels(2), np_fl_1_3, np_fl_2_1)
+
+            self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), np_elevator, ecotron_properties)
 
             self.conveyor = Conveyor(hub.device("D"), controls.conveyor_controls, director)
             self.bebop = Bebop(director, Servo(servo_kit.servo[13]), PWMLED(servo_kit._pca.channels[14]))
-            self.hyperscanner = Hyperscanner(NeopixelSegment(neopixels, 1, 1), NeopixelSegment(neopixels, 0, 1))
+            self.hyperscanner = Hyperscanner(np_hyperscanner_inner, np_hyperscanner_outer)
             self.conveyor_receiver = ConveyorReceiver(np_conveyor_receiver)
 
             self.fans = Fans(hub.device("C"))
@@ -173,9 +189,12 @@ def bind_conveyor_controls(conveyor_controls, master_controller, base, scripter)
 def bind_controls_to_properties(controls, properties):
     
     controls.toggle_board.toggles[0].bind_property(properties.master_volume)
-    controls.toggle_board.toggles[1].bind_property(properties.light_strip_on)
-    controls.toggle_board.toggles[2].bind_property(properties.fans_on)
-    controls.toggle_board.toggles[3].bind_property(properties.elevator_lights_on)
+    controls.toggle_board.toggles[1].bind_property(properties.fans_on)
+
+    controls.toggle_board.toggles[5].bind_property(properties.light_strip_on)
+    controls.toggle_board.toggles[6].bind_property(properties.elevator_lights_on)
+    controls.toggle_board.toggles[7].bind_property(properties.door_lights_on)
+
 
 def bind_properties_to_components(properties, base):
     properties.master_volume.on_value_change = lambda x : set_master_volume(x)
