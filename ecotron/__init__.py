@@ -25,6 +25,7 @@ from tick_aware import DEFAULT_CONTROLLER
 from ecotron.scripts import Scripter
 from speech import say, SpeechLines
 from sound import set_master_volume
+from ecotron.lights import floor_lights, door_lights, top_lights_floor_1
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class Ecotron:
         servo_kit_1 = ServoKit(channels=16, reference_clock_speed=25000000)
         servo_kit_2 = ServoKit(channels=16, address=0x41)
         
-        neopixels = NeopixelStrip(board.D21, 45)
+        neopixels = NeopixelStrip(board.D21, 68)
 
         controls = EcotronControls(mcp23017a_1, mcp23017a_2, mcp3008a)
         properties = EcotronProperties()
@@ -58,27 +59,6 @@ class Ecotron:
         bind_properties_to_components(properties, base)
         bind_controls_to_actions(controls, base, master_controller, scripter)
         
-        base.floor_light.source = value_source.Multiply(
-#            value_source.Wave(base.floor_light.size(), pixels_per_s=10, inner_source=value_source.RGB(32, 32, 20)),
-            
-            # brightness - sine from 0.1 to 1
-            value_source.Add(
-                value_source.Constant(0.4), 
-                value_source.Multiply(value_source.Sine(time_s=3), value_source.Constant(0.6))
-            ),
-            
-            # color
-            value_source.RGB(32, 32, 20),
-            
-            # on switch
-            properties.light_strip_on
-        )
-        
-        base.door_light.source = value_source.Multiply(
-            value_source.RGB(20, 30, 60), 
-            properties.door_lights_on
-        )
-
         DEFAULT_CONTROLLER.on = True
 
         say(SpeechLines.ECOTRON_READY)
@@ -94,13 +74,9 @@ class EcotronControls:
 class EcotronBase:
     def __init__(self, hub, servo_kit_1, servo_kit_2, neopixels, controls, director, ecotron_properties):
             
-            #, FakeNeopixels(1), Neopixels(neopixels, 18, 2)
-            
-
-
             np_fl_1_1 = Neopixels(neopixels, 0, 1)
-            np_hyperscanner_inner = NeopixelSegment(neopixels, 2, 1)
             np_hyperscanner_outer = NeopixelSegment(neopixels, 1, 1)
+            np_hyperscanner_inner = NeopixelSegment(neopixels, 2, 1)
             np_fl_1_2 = Neopixels(neopixels, 3, 15)
             np_conveyor_receiver = NeopixelSegment(neopixels, 18, 1)
             np_fl_1_3 = Neopixels(neopixels, 19, 2)
@@ -108,13 +84,17 @@ class EcotronBase:
             np_fl_2_1 = Neopixels(neopixels, 21, 10, reversed=True)
             np_door = Neopixels(neopixels, 31, 3)
 
-            np_elevator = NeopixelSegment(neopixels, 34, 12)
+            #np_tl_1 = NeopixelSegment(neopixels, 34, 5)
+            np_tl_1 = NeopixelSegment(neopixels, 34, 22)
+
+            np_elevator = NeopixelSegment(neopixels, 56, 12)
 
 # neopixel 16 = machoine
 
-            self.door_light = NeopixelMultiSegment(np_door)
+            self.door_lights = door_lights(NeopixelMultiSegment(np_door))
+            self.floor_lights = floor_lights(NeopixelMultiSegment(np_fl_1_1, FakeNeopixels(2), np_fl_1_2, FakeNeopixels(2), np_fl_1_3, np_fl_2_1))
 
-            self.floor_light = NeopixelMultiSegment(np_fl_1_1, FakeNeopixels(2), np_fl_1_2, FakeNeopixels(2), np_fl_1_3, np_fl_2_1)
+            self.top_lights_floor_1 = top_lights_floor_1(np_tl_1)
 
             self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), np_elevator, ecotron_properties)
 
@@ -193,10 +173,10 @@ def bind_conveyor_controls(conveyor_controls, master_controller, base, scripter)
     def yellow_pressed():
         master_controller.calibration = not master_controller.calibration
 
-    conveyor_controls.button_yellow.on_press = yellow_pressed
-    conveyor_controls.button_green.on_press = green_pressed
-    conveyor_controls.button_blue.on_press = blue_pressed
-    conveyor_controls.button_red.on_press = red_pressed
+    #conveyor_controls.button_yellow.on_press = yellow_pressed
+    #conveyor_controls.button_green.on_press = green_pressed
+    #conveyor_controls.button_blue.on_press = blue_pressed
+    #conveyor_controls.button_red.on_press = red_pressed
 
     conveyor_controls.master_switch.on_press = scripter.production_line.production_line_on
     conveyor_controls.master_switch.on_release = scripter.production_line.production_line_off
@@ -211,14 +191,18 @@ def bind_controls_to_properties(controls, properties):
     controls.toggle_board.toggles[7].bind_property(properties.repair_table_on)
 
     controls.toggle_board.toggles[0].bind_property(properties.light_strip_on)
-    controls.toggle_board.toggles[1].bind_property(properties.elevator_lights_on)
-    controls.toggle_board.toggles[2].bind_property(properties.door_lights_on)
+    controls.toggle_board.toggles[1].bind_property(properties.top_lights_floor_1_on)
+    controls.toggle_board.toggles[2].bind_property(properties.elevator_lights_on)
+    controls.toggle_board.toggles[3].bind_property(properties.door_lights_on)
 
 
 def bind_properties_to_components(properties, base):
     properties.master_volume.on_value_change = lambda x : set_master_volume(x)
     base.fans.bind_to_property(properties.fans_on)
     base.repair_table.bind_to_property(properties.repair_table_on)
+    base.top_lights_floor_1.bind_to_property(properties.top_lights_floor_1_on)
+    base.floor_lights.bind_to_property(properties.light_strip_on)
+    base.door_lights.bind_to_property(properties.door_lights_on)
 
 def bind_controls_to_actions(controls, base, master_controller, scripter):
     bind_elevator(base.elevator, controls.elevator_controls)

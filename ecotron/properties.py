@@ -6,6 +6,7 @@ class EcotronProperties:
         self.repair_table_on = Property("Repair table on", 0)
         self.elevator_lights_on = Property("Elevator lights on", 1)
         self.door_lights_on = Property("Door lights on", 1)
+        self.top_lights_floor_1_on = Property("Top lights floor 1 on", 1)
 
 
 class Property:
