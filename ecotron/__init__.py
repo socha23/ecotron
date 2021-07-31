@@ -11,6 +11,7 @@ import value_source
 from director import Director
 from ecotron.conveyor import Conveyor, ConveyorControls
 from ecotron.elevator import Elevator, ElevatorControls
+from ecotron.repair_table import RepairTable
 from ecotron.fans import Fans
 from ecotron.bebop import Bebop
 from ecotron.hyperscanner import Hyperscanner
@@ -38,7 +39,9 @@ class Ecotron:
         spi = SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
         cs = DigitalInOut(board.D5)
         mcp3008a = MCP3008(spi, cs)
-        servo_kit = ServoKit(channels=16, reference_clock_speed=25000000)
+        servo_kit_1 = ServoKit(channels=16, reference_clock_speed=25000000)
+        servo_kit_2 = ServoKit(channels=16, address=0x41)
+        
         neopixels = NeopixelStrip(board.D21, 45)
 
         controls = EcotronControls(mcp23017a_1, mcp23017a_2, mcp3008a)
@@ -47,7 +50,7 @@ class Ecotron:
         bind_controls_to_properties(controls, properties)
 
         director = Director()
-        base = EcotronBase(hub, servo_kit, neopixels, controls, director, properties)
+        base = EcotronBase(hub, servo_kit_1, servo_kit_2, neopixels, controls, director, properties)
         master_controller = MasterController(base)
 
         scripter = Scripter(director, base, controls, master_controller)
@@ -56,7 +59,18 @@ class Ecotron:
         bind_controls_to_actions(controls, base, master_controller, scripter)
         
         base.floor_light.source = value_source.Multiply(
-            value_source.Wave(base.floor_light.size(), pixels_per_s=10, inner_source=value_source.RGB(32, 32, 20)),
+#            value_source.Wave(base.floor_light.size(), pixels_per_s=10, inner_source=value_source.RGB(32, 32, 20)),
+            
+            # brightness - sine from 0.1 to 1
+            value_source.Add(
+                value_source.Constant(0.4), 
+                value_source.Multiply(value_source.Sine(time_s=3), value_source.Constant(0.6))
+            ),
+            
+            # color
+            value_source.RGB(32, 32, 20),
+            
+            # on switch
             properties.light_strip_on
         )
         
@@ -78,7 +92,7 @@ class EcotronControls:
 
 
 class EcotronBase:
-    def __init__(self, hub, servo_kit, neopixels, controls, director, ecotron_properties):
+    def __init__(self, hub, servo_kit_1, servo_kit_2, neopixels, controls, director, ecotron_properties):
             
             #, FakeNeopixels(1), Neopixels(neopixels, 18, 2)
             
@@ -105,7 +119,11 @@ class EcotronBase:
             self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), np_elevator, ecotron_properties)
 
             self.conveyor = Conveyor(hub.device("D"), controls.conveyor_controls, director)
-            self.bebop = Bebop(director, Servo(servo_kit.servo[13]), PWMLED(servo_kit._pca.channels[14]))
+            self.bebop = Bebop(director, Servo(servo_kit_1.servo[13]), PWMLED(servo_kit_1._pca.channels[14]))
+            
+            
+            self.repair_table = RepairTable(director, PWMLED(servo_kit_2._pca.channels[7]), PWMLED(servo_kit_2._pca.channels[8]), Servo(servo_kit_1.servo[15]))
+
             self.hyperscanner = Hyperscanner(np_hyperscanner_inner, np_hyperscanner_outer)
             self.conveyor_receiver = ConveyorReceiver(np_conveyor_receiver)
 
@@ -188,17 +206,19 @@ def bind_conveyor_controls(conveyor_controls, master_controller, base, scripter)
 
 def bind_controls_to_properties(controls, properties):
     
-    controls.toggle_board.toggles[0].bind_property(properties.master_volume)
-    controls.toggle_board.toggles[1].bind_property(properties.fans_on)
+    controls.toggle_board.toggles[5].bind_property(properties.master_volume)
+    controls.toggle_board.toggles[6].bind_property(properties.fans_on)
+    controls.toggle_board.toggles[7].bind_property(properties.repair_table_on)
 
-    controls.toggle_board.toggles[5].bind_property(properties.light_strip_on)
-    controls.toggle_board.toggles[6].bind_property(properties.elevator_lights_on)
-    controls.toggle_board.toggles[7].bind_property(properties.door_lights_on)
+    controls.toggle_board.toggles[0].bind_property(properties.light_strip_on)
+    controls.toggle_board.toggles[1].bind_property(properties.elevator_lights_on)
+    controls.toggle_board.toggles[2].bind_property(properties.door_lights_on)
 
 
 def bind_properties_to_components(properties, base):
     properties.master_volume.on_value_change = lambda x : set_master_volume(x)
     base.fans.bind_to_property(properties.fans_on)
+    base.repair_table.bind_to_property(properties.repair_table_on)
 
 def bind_controls_to_actions(controls, base, master_controller, scripter):
     bind_elevator(base.elevator, controls.elevator_controls)

@@ -57,6 +57,8 @@ class Script:
 def script_with_step(handler):
     return Script().add_step(handler)
 
+def script_with_sleep(duration_s):
+    return Script().add_sleep(duration_s)
 
 class _ScriptRunner(TickAware):
 
@@ -66,6 +68,7 @@ class _ScriptRunner(TickAware):
     _STATE_AFTER_ASYNC_RETURN = 3
     _STATE_WAITING_FOR_SUBSCRIPTS_TO_FINISH = 4
     _STATE_COMPLETE = 5
+    _STATE_CANCELED = 6
 
     def __init__(self, script, director, on_complete):
         TickAware.__init__(self, director._tick_aware_controller)
@@ -76,9 +79,19 @@ class _ScriptRunner(TickAware):
         self._state = _ScriptRunner._STATE_RUNNING
         self._sleep_left = 0
         self._subscript_runners = []
+        self._canceled = False
+
+    def cancel(self):
+        self._canceled = True
 
     def tick(self, cur_s, delta_s):
-        self._proceed(delta_s)
+        if not self._canceled:
+            self._proceed(delta_s)
+        else:
+            self.close()
+            self._director._unregister_runner(self)
+            self._state = _ScriptRunner._STATE_CANCELED
+
 
 
     def _proceed(self, delta_s):

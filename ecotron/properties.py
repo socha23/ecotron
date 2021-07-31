@@ -3,6 +3,7 @@ class EcotronProperties:
         self.master_volume = Property("Master volume", 1)
         self.light_strip_on = Property("Light strip on", 1)
         self.fans_on = Property("Fans on", 0)
+        self.repair_table_on = Property("Repair table on", 0)
         self.elevator_lights_on = Property("Elevator lights on", 1)
         self.door_lights_on = Property("Door lights on", 1)
 

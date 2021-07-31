@@ -45,6 +45,7 @@ class Servo(TickAware):
             self._angle = None
             self._servo.angle = None
        
-
+    def set_angle(self, new_angle):
+        self.angle = new_angle
     
 
