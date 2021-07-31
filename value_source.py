@@ -278,6 +278,48 @@ class TimeConstrained(_Decorator):
         else:
             return self._inner_source.value()
 
+class FadeInOut(_Decorator):
+    STATE_ON = 1
+    STATE_FADE_OUT = 2
+    STATE_OFF = 3
+    STATE_FADE_IN = 4
+
+    def __init__(self, duration_s=1, source=AlwaysOn()):
+        _Decorator.__init__(self, source)
+        self._state_transition_on = 0
+        self._duration_s = duration_s
+        self._state = FadeInOut.STATE_OFF
+
+    def fade_in(self):
+        self._state_transition_on = self.current_time()
+        self._state = FadeInOut.STATE_FADE_IN
+
+    def fade_out(self):
+        self._state_transition_on = self.current_time()
+        self._state = FadeInOut.STATE_FADE_OUT
+
+
+    def value(self):
+        if self._state == FadeInOut.STATE_OFF:
+            return 0
+        elif self._state == FadeInOut.STATE_ON:
+            return self._inner_source.value()
+        elif self._state == FadeInOut.STATE_FADE_IN:
+            phase = (self.current_time() - self._state_transition_on) / self._duration_s    
+            if phase < 1:
+                return multiply(self._inner_source.value(), phase)
+            else:
+                self._state = FadeInOut.STATE_ON 
+                return self._inner_source.value()
+        else: # self._state == FadeInOut.STATE_FADE_OUT:
+            phase = (self.current_time() - self._state_transition_on) / self._duration_s    
+            if phase < 1:
+                return multiply(self._inner_source.value(), 1 - phase)
+            else:
+                self._state = FadeInOut.STATE_OFF 
+                return 0
+
+
 class FadeInFadeOut(ValueSource):
 
     STATE_ON = 1

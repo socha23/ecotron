@@ -6,14 +6,15 @@ class Lights(Widget):
     def __init__(self, lights, source):
         Widget.__init__(self)
 
+        self._source = value_source.FadeInOut(duration_s=0.5, source=source)
         self._lights = lights
-        self._source = source
-
-    def when_turn_on(self):
         self._lights.source = self._source
 
+    def when_turn_on(self):
+        self._source.fade_in()
+
     def when_turn_off(self):
-        self._lights.source = value_source.AlwaysOff()
+        self._source.fade_out()
 
 
 def floor_lights(lights):
