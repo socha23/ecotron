@@ -26,6 +26,7 @@ from ecotron.scripts import Scripter
 from speech import say, SpeechLines
 from sound import set_master_volume
 from ecotron.lights import floor_lights, door_lights, top_lights_floor_1
+from ecotron.jungle import Jungle
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +109,14 @@ class EcotronBase:
             self.conveyor_receiver = ConveyorReceiver(np_conveyor_receiver)
 
             self.fans = Fans(hub.device("C"))
+
+            self.jungle = Jungle([
+                PWMLED(servo_kit_2._pca.channels[2]),
+                PWMLED(servo_kit_2._pca.channels[3]),
+                PWMLED(servo_kit_2._pca.channels[4]),
+                PWMLED(servo_kit_2._pca.channels[5]),
+                PWMLED(servo_kit_2._pca.channels[6]),                
+            ])
 
 
 class MasterController:
@@ -194,6 +203,7 @@ def bind_controls_to_properties(controls, properties):
     controls.toggle_board.toggles[1].bind_property(properties.top_lights_floor_1_on)
     controls.toggle_board.toggles[2].bind_property(properties.elevator_lights_on)
     controls.toggle_board.toggles[3].bind_property(properties.door_lights_on)
+    controls.toggle_board.toggles[4].bind_property(properties.jungle_on)
 
 
 def bind_properties_to_components(properties, base):
@@ -203,6 +213,7 @@ def bind_properties_to_components(properties, base):
     base.top_lights_floor_1.bind_to_property(properties.top_lights_floor_1_on)
     base.floor_lights.bind_to_property(properties.light_strip_on)
     base.door_lights.bind_to_property(properties.door_lights_on)
+    base.jungle.bind_to_property(properties.jungle_on)
 
 def bind_controls_to_actions(controls, base, master_controller, scripter):
     bind_elevator(base.elevator, controls.elevator_controls)

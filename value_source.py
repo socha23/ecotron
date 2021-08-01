@@ -520,16 +520,26 @@ def wave_mask(size, spread, phase, wave_width=2):
 
 # Eye blink
 
-BLINK_TIME = 0.2
-PAUSE_BETWEEN_BLINKS = 4
+BLINK_TIME = 0.1
 
-def random_pause_between_blinks():
-    return PAUSE_BETWEEN_BLINKS * (random.random() + random.random())
+PAUSE_BETWEEN_BLINKS = 4
+PAUSE_BETWEEN_MULTIBLINKS = 0.1
+
+CHANCE_FOR_MULTI_BLINK = 0.5
 
 class EyeBlink(ValueSource):
     def __init__(self):
         ValueSource.__init__(self)
         self._blink_start = 0
+        self._last_was_doubleblink = False
+
+    def random_pause_between_blinks(self):
+        if not self._last_was_doubleblink and random.random() < CHANCE_FOR_MULTI_BLINK:
+            self._last_was_doubleblink = True
+            return PAUSE_BETWEEN_MULTIBLINKS
+        self._last_was_doubleblink = False
+        return PAUSE_BETWEEN_BLINKS * (random.random() + random.random())
+
 
     def value(self):
         t = self.current_time()
@@ -538,7 +548,7 @@ class EyeBlink(ValueSource):
             brightness = abs(blink_phase - 0.5)
             return brightness
         elif t > self._blink_start + BLINK_TIME:
-            self._blink_start = t + random_pause_between_blinks()
+            self._blink_start = t + self.random_pause_between_blinks()
             return 1
         else: # t < self._blink_start
             return 1
