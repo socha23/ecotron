@@ -38,7 +38,7 @@ def multiply(value, multiplier):
     elif is_list(value) and is_tuple(multiplier):
         return multiply(multiplier, value)
     else:
-        raise f"Cannot multiply {value} by {multiplier}"
+        raise Exception(f"Cannot multiply {value} by {multiplier}")
         
 
 def clamp(value, min_value=0, max_value=1):
@@ -49,7 +49,7 @@ def clamp(value, min_value=0, max_value=1):
     elif is_tuple(value):
         return tuple(clamp(list(value), min_value, max_value))
     else:
-        raise f"Cannot clamp {value}"
+        raise Exception(f"Cannot clamp {value}")
 
 
 
@@ -516,6 +516,8 @@ def wave_mask(size, spread, phase, wave_width=2):
         dist = min(abs(i - phase), abs(i - phase - spread), abs(i - phase + spread))
         result.append(max(0, 1 - dist / wave_width))
     return result
+
+
 
 
 # Eye blink

@@ -25,7 +25,7 @@ from tick_aware import DEFAULT_CONTROLLER
 from ecotron.scripts import Scripter
 from speech import say, SpeechLines
 from sound import set_master_volume
-from ecotron.lights import floor_lights, door_lights, top_lights_floor_1
+from ecotron.lights import Lights, floor_lights
 from ecotron.jungle import Jungle
 
 logger = logging.getLogger(__name__)
@@ -85,17 +85,19 @@ class EcotronBase:
             np_fl_2_1 = Neopixels(neopixels, 21, 10, reversed=True)
             np_door = Neopixels(neopixels, 31, 3)
 
-            #np_tl_1 = NeopixelSegment(neopixels, 34, 5)
             np_tl_1 = NeopixelSegment(neopixels, 34, 22)
 
             np_elevator = NeopixelSegment(neopixels, 56, 12)
 
 # neopixel 16 = machoine
 
-            self.door_lights = door_lights(NeopixelMultiSegment(np_door))
-            self.floor_lights = floor_lights(NeopixelMultiSegment(np_fl_1_1, FakeNeopixels(2), np_fl_1_2, FakeNeopixels(2), np_fl_1_3, np_fl_2_1))
+            self.door_lights = Lights(NeopixelMultiSegment(np_door), ecotron_properties.door_lights_color)
+            self.floor_lights = floor_lights(
+                NeopixelMultiSegment(np_fl_1_1, FakeNeopixels(2), np_fl_1_2, FakeNeopixels(2), np_fl_1_3, np_fl_2_1),
+                ecotron_properties.floor_lights_color
+                )
 
-            self.top_lights_floor_1 = top_lights_floor_1(np_tl_1)
+            self.top_lights_floor_1 = Lights(np_tl_1, ecotron_properties.top_lights_floor_1_color)
 
             self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), np_elevator, ecotron_properties)
 
