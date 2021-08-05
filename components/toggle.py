@@ -7,6 +7,7 @@ class Toggle(TickAware):
         self._pin = pin
         pin.direction = Direction.INPUT
         pin.pull = pull
+        self._pull = pull
         self.on_on = lambda: None
         self.on_off = lambda: None
         self._last_tick_value = None
@@ -15,7 +16,7 @@ class Toggle(TickAware):
         return self._pin.value
 
     def is_on(self):
-        return (self._pin.pull == Pull.DOWN) == self.value()
+        return (self._pull == Pull.DOWN) == self.value()
 
     def is_off(self):
         return not self.is_on()
@@ -24,7 +25,7 @@ class Toggle(TickAware):
         if self.value() != self._last_tick_value:
             if self.is_on():
                 self._on_on()
-            elif self.is_off():
+            else:
                 self._on_off()
         self._last_tick_value = self.value()
 

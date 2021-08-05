@@ -14,10 +14,12 @@ class EcotronProperties:
         self.door_lights_on = Property("Door lights on", 1)
         self.top_lights_floor_1_on = Property("Top lights floor 1 on", 1)
         self.jungle_on = Property("Jungle on", 0)
+        self.top_lights_jungle_on = Property("Jungle on", 0)
 
         self.door_lights_color = Property("Door lights color RGB", rgb(20, 30, 60))
         self.floor_lights_color = Property("Floor lights color RGB", rgb(10, 60, 50))
         self.top_lights_floor_1_color = Property("Top lights floor 1 color RGB", rgb(60, 50, 20))
+        self.top_lights_jungle_color = Property("Top lights jungle color RGB", rgb(60, 50, 20))
 
 
 class Property:
@@ -29,6 +31,7 @@ class Property:
 
     def _on_value_change(self):
         self.on_value_change(self.value())
+        print(f"{self._name} set to {self.value()}")
 
     def value(self):
         return self._value

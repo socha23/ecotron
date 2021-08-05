@@ -7,6 +7,7 @@ class Button(TickAware):
         self._pin = pin
         pin.direction = Direction.INPUT
         pin.pull = pull
+        self._pull = pull
         self._last_pressed_time = 0
         self._last_released_time = 0
         self._last_tick_pressed = False
@@ -19,7 +20,7 @@ class Button(TickAware):
         return self._pin.value
 
     def is_pressed(self):
-        return (self._pin.pull == Pull.DOWN) == self.value
+        return (self._pull == Pull.DOWN) == self.value
 
     def tick(self, time, delta):
         if self.is_pressed() and not self._last_tick_pressed:

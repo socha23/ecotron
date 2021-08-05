@@ -11,6 +11,8 @@ ANGLE_HEAD_MAX = 120
 ANGLE_OUTSIDE_MIN = 0
 ANGLE_OUTSIDE_MAX = 100
 
+SERVO_MOVE_SPEED = 0.3
+
 class RepairTable(Widget, TimeAware):
 
     def __init__(self, director, robot_light, welder_light, welder_servo):
@@ -49,8 +51,8 @@ class RepairTable(Widget, TimeAware):
 
 
     def _pause(self):
-        MIN_IDLE_TIME = 3
-        MAX_IDLE_TIME = 10
+        MIN_IDLE_TIME = 2
+        MAX_IDLE_TIME = 6
 
         self._execute(Script()
             .add_sleep(random.uniform(MIN_IDLE_TIME, MAX_IDLE_TIME))
@@ -64,14 +66,17 @@ class RepairTable(Widget, TimeAware):
         self._do_random_action()
 
     def _do_some_welding(self):
+
+
+
         script = Script()
 
-        script.add_step(lambda: self._welder_servo.set_angle(random.randint(ANGLE_WELDING_MIN, ANGLE_WELDING_MAX)))
-        script.add_sleep(1)
+        script.add_async_step(lambda c: self._welder_servo.move_to(random.randint(ANGLE_WELDING_MIN, ANGLE_WELDING_MAX), SERVO_MOVE_SPEED, c))
+        script.add_sleep(0.2)
 
         for _ in range(random.randint(3, 7)):
-            script.add_step(lambda: self._welder_servo.set_angle(random.randint(ANGLE_WELDING_MIN, ANGLE_WELDING_MAX)))
-            script.add_sleep(0.6)
+            script.add_async_step(lambda c: self._welder_servo.move_to(random.randint(ANGLE_WELDING_MIN, ANGLE_WELDING_MAX), SERVO_MOVE_SPEED, c))
+            script.add_sleep(0.2)
             
             ONE_BLINK_DURATION = 0.1
 
@@ -86,15 +91,13 @@ class RepairTable(Widget, TimeAware):
 
     def _look_at_head(self):
         self._execute(Script()
-            .add_step(lambda: self._welder_servo.set_angle(random.randrange(ANGLE_HEAD_MIN, ANGLE_HEAD_MAX)))
-            .add_sleep(0.6)
+            .add_async_step(lambda c: self._welder_servo.move_to(random.randrange(ANGLE_HEAD_MIN, ANGLE_HEAD_MAX), SERVO_MOVE_SPEED, c))
             .add_step(lambda: self._action_completed())
         )
 
     def _look_at_outside(self):
         self._execute(Script()
-            .add_step(lambda: self._welder_servo.set_angle(random.randint(ANGLE_OUTSIDE_MIN, ANGLE_OUTSIDE_MAX)))
-            .add_sleep(1)
+            .add_async_step(lambda c: self._welder_servo.move_to(random.randint(ANGLE_OUTSIDE_MIN, ANGLE_OUTSIDE_MAX), SERVO_MOVE_SPEED, c))
             .add_step(lambda: self._action_completed())
         )
     

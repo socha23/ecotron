@@ -3,7 +3,9 @@ import neopixel
 import atexit
 from tick_aware import TickAware
 from value_source import SourceWatcherMixin, AlwaysOff, Constant
+import time
 
+REFRESH_RATE_HZ = 50
 
 class NeopixelStrip(TickAware):
 
@@ -13,10 +15,15 @@ class NeopixelStrip(TickAware):
         self._pixel_count = pixel_count
         self._value = [(0, 0, 0)] * pixel_count
         self._last_value = []
+        self._last_update = 0
         atexit.register(self.off)
 
     def tick(self, time_s, delta_s):
-        if self._value != self._last_value:
+        
+
+        if self._value != self._last_value and time.time() - self._last_update > (1 / REFRESH_RATE_HZ):
+            self._last_update = self.current_time()
+            my_time = time.time()
             self._pixels[:] = self._value
             self._pixels.show()
             self._last_value[:] = self._value

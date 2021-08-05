@@ -12,11 +12,11 @@ neopixels = NeopixelStrip(board.D21, 30)
 
 director = Director()
 
-outer = NeopixelSegment(neopixels, 0, 1)
+outer = NeopixelSegment(neopixels, 9, 1)
 outer.source = RGB(128, 0, 0)
 
 
-inner = NeopixelSegment(neopixels, 1, 1)
+inner = NeopixelSegment(neopixels, 9, 1)
 inner.source = RGB(0, 128, 0)
 
 DEFAULT_CONTROLLER.on = True
