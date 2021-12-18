@@ -1,4 +1,4 @@
-from ecotron.reactor import ReactorDoor, ReactorFanLights, ReactorLights
+from ecotron.reactor import Reactor, ReactorDoor, ReactorFanLights, ReactorWarningLights
 from ecotron.color_controller import DEFAULT_COLOR_CONTROLLER
 from ecotron.xy_controller import DEFAULT_XY_CONTROLLER
 from ecotron.aquarium import Aquarium
@@ -213,14 +213,14 @@ class EcotronBase:
                 Servo(servo_kit_3.servo[11], min_pulse_witdh_range=700, max_pulse_witdh_range=2650)
             )
             self.reactor_door.bind_to_property(properties.reactor_door_open)
-            self.reactor_lights = ReactorLights(
+            self.reactor_lights = ReactorWarningLights(
                 PWMLED(servo_kit_3._pca.channels[10]),
                 PWMLED(servo_kit_3._pca.channels[9]),
             )
             self.reactor_lights.bind_to_property(properties.reactor_lights_on)
             self.reactor_fan_lights = ReactorFanLights(np_reactor_fans)
             self.reactor_fan_lights.bind_to_property(properties.reactor_fan_lights_on)
-
+            self.reactor = Reactor(np_reactor_main)
 
 def bind_elevator(elevator, elevator_controls):
         for floor_idx in range(len(Elevator.FLOOR_HEIGHTS)):
@@ -258,6 +258,7 @@ def bind_controls_to_actions(controls, base):
     controls.conveyor_controls.button_yellow.on_press = base.airlock.run_cycle_from_inside
 
     controls.conveyor_controls.button_green.on_press = base.stairsdude.random_rotation
+    controls.conveyor_controls.button_red.on_press = base.reactor.boom
 
 
 def analog_read(mcp, pin):
