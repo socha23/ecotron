@@ -12,8 +12,6 @@ class PrimitiveLED:
 
     @value.setter
     def value(self, val):
-        print(f"setting {self} to {val}")
-
         self._pin.value = (val == 1)
 
 

@@ -1,9 +1,10 @@
+from numpy import source
 from components.button import Button
 from components.led import LED
 from director import Script
 from sound import Clip
 
-from value_source import ValueSource, RGB, multiply, add, Multiply, Add, Wave, Concat, RepeatedConstant, Max, Constant, FadeInFadeOut
+from value_source import AlwaysOff, Blink, ValueSource, RGB, multiply, add, Multiply, Add, Wave, Concat, RepeatedConstant, Max, Constant, FadeInFadeOut
 
 
 class ElevatorControls:
@@ -26,9 +27,9 @@ class Elevator:
     BLINK_TIME_CURRENT_MOVE = 0.5
     BLINK_TIME_ENQUEUED = (0.2, 0.8)
 
-    FLOOR_HEIGHTS = [0, 750, 2000]
+    FLOOR_HEIGHTS = [0, 1380, 3140]
 
-    ZERO_POSITION = -80
+    ZERO_POSITION = 0
 
     CLIP_DING = Clip("./resources/elevator_ding2.ogg")
     CLIP_DOOR = Clip("./resources/elevator_door1.ogg", volume=0.6)
@@ -48,6 +49,7 @@ class Elevator:
         self.reset()
 
         neopixels.source = ElevatorLightStripValueSource(neopixels.size(), self._motor, ecotron_properties.elevator_lights_on)
+        self._properties = ecotron_properties
 
     def go_floor_up(self):
         if self._last_target() < len(Elevator.FLOOR_HEIGHTS) - 1:
@@ -69,12 +71,12 @@ class Elevator:
 
     def go_to_floor(self, floor_idx):
         if self._state == Elevator.STATE_WAITING and self._current_floor == floor_idx:
-            return        
+            return
         elif self._state != Elevator.STATE_WAITING and floor_idx != self._current_target:
             self._enqueue_floor(floor_idx)
         else:
             add_reset_pos = False
-            
+
             dst_pos = Elevator.FLOOR_HEIGHTS[floor_idx]
             if floor_idx == 0:
                 add_reset_pos = True
@@ -97,10 +99,10 @@ class Elevator:
 
             self._director.execute(script)
 
-    def _enqueue_floor(self, floor_idx):        
+    def _enqueue_floor(self, floor_idx):
         if floor_idx not in self._queued_floors:
             self._queued_floors.append(floor_idx)
-            self._controls.floor_button_leds[floor_idx].blink(Elevator.BLINK_TIME_ENQUEUED)
+            self._controls.floor_button_leds[floor_idx].source = Blink(Elevator.BLINK_TIME_ENQUEUED, source=self._properties.control_panel_ligths_on)
 
 
     def _next_queued_floor(self):
@@ -114,10 +116,10 @@ class Elevator:
         self._state = Elevator.STATE_MOVING
         self._current_target = floor_idx
         self._controls.floor_button_leds[self._current_floor].off()
-        self._controls.floor_button_leds[floor_idx].blink(Elevator.BLINK_TIME_CURRENT_MOVE)        
+        self._controls.floor_button_leds[floor_idx].source = Blink(Elevator.BLINK_TIME_CURRENT_MOVE, source=self._properties.control_panel_ligths_on)
 
     def _on_move_end(self, floor_idx):
-        self._controls.floor_button_leds[floor_idx].on()
+        self._controls.floor_button_leds[floor_idx].source = self._properties.control_panel_ligths_on
         self._current_floor = floor_idx
         self._current_target = None
         self._state = Elevator.STATE_WAITING
@@ -125,7 +127,7 @@ class Elevator:
 
     def reset(self):
         for led in self._controls.floor_button_leds:
-            led.off() 
+            led.off()
         self._motor.set_acc_time(0)
         self._motor.set_dec_time(0)
         self._director.execute(Script()
@@ -147,10 +149,12 @@ class ElevatorLightStripValueSource(ValueSource):
         self._position_fade = FadeInFadeOut(0.5)
         self._movement_fade = FadeInFadeOut(0.5, False)
 
-        self._inner_source = Max(
-            Multiply(self._position_fade, self._position_value_source, RGB(0, 50, 0), lights_on_property),
-            Multiply(self._movement_fade, self._movement_source, RGB(0, 64, 64), lights_on_property)
-        )
+        #self._inner_source = Max(
+        #    Multiply(self._position_fade, self._position_value_source, RGB(0, 50, 0), lights_on_property),
+        #    Multiply(self._movement_fade, self._movement_source, RGB(0, 64, 64), lights_on_property)
+        #)
+
+        self._inner_source = AlwaysOff()
 
     def value(self):
         return self._inner_source.value()
@@ -167,14 +171,14 @@ class ElevatorLightStripValueSource(ValueSource):
 
 class ElevatorMovementValueSource(ValueSource):
 
-    def __init__(self, size, height=1, intensity_from=0, intensity_to=1):        
+    def __init__(self, size, height=1, intensity_from=0, intensity_to=1):
         ValueSource.__init__(self)
         self._height = height
         self._size = size
         self.set_movement(0, 0)
         self._intensity_from = intensity_from
         self._intensity_to = intensity_to
-        
+
 
     def set_movement(self, from_floor=0, to_floor=0):
 
@@ -199,8 +203,8 @@ class ElevatorMovementValueSource(ValueSource):
                 Multiply(
                     Wave(upmost - downmost, pixels_per_s=pixels_per_s, wave_width=1, spread=4),
                     Constant(self._intensity_to - self._intensity_from)
-                )                
-            )            
+                )
+            )
         )
 
         if upmost < self._size:

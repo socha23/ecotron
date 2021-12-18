@@ -1,6 +1,7 @@
-from director import Director, Script, script_with_sleep
-from ecotron.widget import Widget
-from tick_aware import TimeAware
+from ecotron.robot import RobotHead
+from beeper.beeps2 import eddard_speech
+from director import Script
+from .widget import MultiWidget, PausingActor
 import random
 import value_source
 
@@ -13,62 +14,34 @@ ANGLE_OUTSIDE_MAX = 100
 
 SERVO_MOVE_SPEED = 0.3
 
-class RepairTable(Widget, TimeAware):
+class RepairActor(PausingActor):
+    def __init__(self, servo, light):
+        PausingActor.__init__(self, min_idle_time=3, max_idle_time=10)
+        self._welder_servo = servo
+        self._welder_light = light
 
-    def __init__(self, director, robot_light, welder_light, welder_servo):
-        Widget.__init__(self)
-        TimeAware.__init__(self)
-        self._director = director
-        self._robot_light = robot_light
-        self._welder_light = welder_light
-        self._welder_servo = welder_servo
-        
-        self._last_action_completed_at = 0
-        self._current_script_executor = None
-
-    def when_turn_on(self):
-        self._robot_light.source = value_source.EyeBlink()
-        self._do_random_action()
-
-    def when_turn_off(self):
-        self._robot_light.source = value_source.AlwaysOff()
-        if self._current_script_executor:
-            self._current_script_executor.cancel()
-            self._current_script_executor = None
-
-    def _execute(self, script):
-        self._current_script_executor = self._director.execute(script)
-
-
-    def _do_random_action(self):
+    def do_action(self, callback):
         action = random.randint(0, 10)
-        if action < 5:
-            self._do_some_welding()
+        if action < 6:
+            self._do_some_welding(callback)
         elif action < 8:
-            self._look_at_head()
+            self._look_at_head(callback)
         else:
-            self._look_at_outside()
+            self._look_at_outside(callback)
 
-
-    def _pause(self):
-        MIN_IDLE_TIME = 2
-        MAX_IDLE_TIME = 6
-
+    def _look_at_head(self, callback):
         self._execute(Script()
-            .add_sleep(random.uniform(MIN_IDLE_TIME, MAX_IDLE_TIME))
-            .add_step(lambda: self._pause_completed())
+            .add_async_step(lambda c: self._welder_servo.move_to(random.randrange(ANGLE_HEAD_MIN, ANGLE_HEAD_MAX), SERVO_MOVE_SPEED, c))
+            .add_step(callback)
         )
 
-    def _action_completed(self):
-        self._pause()
+    def _look_at_outside(self, callback):
+        self._execute(Script()
+            .add_async_step(lambda c: self._welder_servo.move_to(random.randint(ANGLE_OUTSIDE_MIN, ANGLE_OUTSIDE_MAX), SERVO_MOVE_SPEED, c))
+            .add_step(callback)
+        )
 
-    def _pause_completed(self):
-        self._do_random_action()
-
-    def _do_some_welding(self):
-
-
-
+    def _do_some_welding(self, callback):
         script = Script()
 
         script.add_async_step(lambda c: self._welder_servo.move_to(random.randint(ANGLE_WELDING_MIN, ANGLE_WELDING_MAX), SERVO_MOVE_SPEED, c))
@@ -77,7 +50,7 @@ class RepairTable(Widget, TimeAware):
         for _ in range(random.randint(3, 7)):
             script.add_async_step(lambda c: self._welder_servo.move_to(random.randint(ANGLE_WELDING_MIN, ANGLE_WELDING_MAX), SERVO_MOVE_SPEED, c))
             script.add_sleep(0.2)
-            
+
             ONE_BLINK_DURATION = 0.1
 
             repetitions = random.randint(2, 20)
@@ -85,19 +58,15 @@ class RepairTable(Widget, TimeAware):
 
             script.add_step(lambda: self._welder_light.set_source(value_source.repeated_blink(how_many = repetitions, duration = ONE_BLINK_DURATION)))
             script.add_sleep(time + 0.5)
-            
-        script.add_step(lambda: self._action_completed())
+
+        script.add_step(callback)
         self._execute(script)
 
-    def _look_at_head(self):
-        self._execute(Script()
-            .add_async_step(lambda c: self._welder_servo.move_to(random.randrange(ANGLE_HEAD_MIN, ANGLE_HEAD_MAX), SERVO_MOVE_SPEED, c))
-            .add_step(lambda: self._action_completed())
-        )
 
-    def _look_at_outside(self):
-        self._execute(Script()
-            .add_async_step(lambda c: self._welder_servo.move_to(random.randint(ANGLE_OUTSIDE_MIN, ANGLE_OUTSIDE_MAX), SERVO_MOVE_SPEED, c))
-            .add_step(lambda: self._action_completed())
-        )
-    
+class RepairTable(MultiWidget):
+
+    def __init__(self, robot_light, welder_light, welder_servo):
+        self._eddard_head = RobotHead(robot_light, eddard_speech(), standby_brightness=0.4, volume=0.2)
+        self._actor = RepairActor(welder_servo, welder_light)
+
+        MultiWidget.__init__(self, self._actor, self._eddard_head)

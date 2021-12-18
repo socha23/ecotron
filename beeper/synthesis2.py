@@ -15,8 +15,8 @@ SAMPLE_RATE = mixer_settings[0]
 BITRATE = -mixer_settings[1]
 SAMPLE_MAX_VAL = 2**(BITRATE - 1) - 1
 
-def make_clip(*waveforms):
-  return Clip(pygame.sndarray.make_sound(make_sample(*waveforms)))
+def make_clip(*waveforms, stereo=None):
+  return Clip(pygame.sndarray.make_sound(make_sample(*waveforms)), stereo=stereo)
 
 def make_sample(*waveforms):
   waveform = np.concatenate(tuple(waveforms))
@@ -26,6 +26,10 @@ def make_sample(*waveforms):
 
 def _x(freq_hz, duration_s):
   return np.linspace(0, 2 * np.pi * freq_hz * duration_s, int(duration_s * SAMPLE_RATE))
+
+def silence(duration_s=1):
+  return np.zeros(int(duration_s * SAMPLE_RATE))
+  # return cut(sine(1, duration_s), min_value=0, max_value=0)
 
 def sine(freq_hz, duration_s=1):  
   return np.sin(_x(freq_hz, duration_s))

@@ -52,10 +52,17 @@ class Script:
         self.steps.extend(script.steps)
         return self
 
-    
+    # execute self on the default director
+    def execute(self, on_complete=lambda:None):
+        return execute(self, on_complete=on_complete)
+
+
 
 def script_with_step(handler):
     return Script().add_step(handler)
+
+def script_with_async_step(handler):
+    return Script().add_async_step(handler)
 
 def script_with_sleep(duration_s):
     return Script().add_sleep(duration_s)
@@ -100,7 +107,7 @@ class _ScriptRunner(TickAware):
         if isinstance(current_step, _SleepStep):
             if self._state == _ScriptRunner._STATE_RUNNING:
                 self._sleep_left = current_step.duration_s
-            if self._sleep_left <= delta_s:    
+            if self._sleep_left <= delta_s:
                 time_left = delta_s - self._sleep_left
                 self._state = _ScriptRunner._STATE_RUNNING
                 self._sleep_left = 0
@@ -124,7 +131,7 @@ class _ScriptRunner(TickAware):
                 if proceed:
                     self._subscript_runners = []
                     self._state = _ScriptRunner._STATE_RUNNING
-                    self._current_step_finished(delta_s)                    
+                    self._current_step_finished(delta_s)
         elif isinstance(current_step, _AsyncStep):
             if self._state == _ScriptRunner._STATE_RUNNING:
                 self._state = _ScriptRunner._STATE_WAITING_FOR_ASYNC_RETURN
@@ -147,7 +154,7 @@ class _ScriptRunner(TickAware):
             self._director._unregister_runner(self)
             self._state = _ScriptRunner._STATE_COMPLETE
             self._on_complete()
-        else: 
+        else:
             self._proceed(delta_s)
 
 class Director(TickAware):
@@ -162,7 +169,7 @@ class Director(TickAware):
 
     def tick_aware_controller(self):
         return self._tick_aware_controller
-    
+
     def script_runner_count(self):
         return len(self._script_runners)
 
@@ -170,6 +177,11 @@ class Director(TickAware):
         runner = _ScriptRunner(script, self, on_complete)
         self._script_runners.add(runner)
         return runner
+
+DEFAULT_DIRECTOR = Director()
+
+def execute(script, on_complete=lambda:None):
+    return DEFAULT_DIRECTOR.execute(script, on_complete)
 
 class ScriptQueue:
     def __init__(self, director, on_complete=lambda:None):

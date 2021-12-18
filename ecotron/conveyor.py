@@ -1,15 +1,17 @@
+from components.distance_meter import DistanceMeter
 from adafruit_mcp3xxx.mcp3008 import P0
 
+from components.toggle import Toggle
 from components.button import Button
 from components.potentiometer import Potentiometer
 from tick_aware import TickAware
-from director import Director, Script
-from speech import say, SpeechLines
+from director import Script
 from ecotron.widget import Widget
 
+# todo no longer conv controls; extract
 class ConveyorControls:
     def __init__(self, mcp23017, mcp3008):
-        self.master_switch = Button(mcp23017.get_pin(7))
+        self.toggle = Toggle(mcp23017.get_pin(7))
         self.potentiometer = Potentiometer(mcp3008, P0)
         self.button_blue = Button(mcp23017.get_pin(6))
         self.button_green = Button(mcp23017.get_pin(5))
@@ -17,90 +19,120 @@ class ConveyorControls:
         self.button_red = Button(mcp23017.get_pin(3))
 
 
-RESET_POS_ON_FINISH_CALIBRATION = True
+CONVEYOR_SPEED = 0.15
+POS_PER_LINK = 140
+LINKS_PER_MOVE = 5
+PAUSE_DURATION = 5
+LINKS_IN_CHAIN = 40
+POS_UPDATE_DELTA = 5
 
-class Conveyor(TickAware, Widget):
+PLANT_COUNT = 8
 
-    # positive speed = CCW movement
-    # calibrated to positive speed, with 0 = cooker
+class Plant:
+    def __init__(self, idx, belt):
+        self._idx = idx
+        self._belt = belt
 
-    # POS_PER_LINK = 131.5
-    # 132 too much
-    # smething started to suck, temp override
-    POS_PER_LINK = 138
-
-    LINKS_IN_CHAIN = 40
-
-    STATE_WAITING = 0
-    STATE_STEPPING = 1
-
-    def __init__(self, motor, controls, director):
-        TickAware.__init__(self)
-        Widget.__init__(self)
-        self._director = director
-        self._motor = motor
-        self._motor.set_feedback_mode(1)
-        motor.reset_position(0)
-        self._current_position = 0
-        self._state = Conveyor.STATE_WAITING
-        self._controls = controls        
-        self._last_move_start_pos = None
+    def belt_position(self):
+        return (((self._idx + self._belt._moves_done) % PLANT_COUNT) + self._belt.phase()) * LINKS_PER_MOVE
 
 
-    def move_links(self, links, speed=0.5, callback=lambda:None):
-        if not speed:
-            return
-        self.init_move()
-        self._director.execute(Script()
-            .add_async_step(lambda c: self.move_conveyor(self._direction() * links * Conveyor.POS_PER_LINK, speed, c))
-            .add_step(self.end_move)
-            .add_step(callback)
-        )
+class Belt:
+  def __init__(self, motor, analog_value_provider):
+    self._motor = motor
+    self._motor.set_feedback_mode(POS_UPDATE_DELTA)
+    motor.reset_position(0)
+    self._moves_done = 0
+    self._position_at_move_start = 0
+    self._position_at_move_end = 0
+    self._distance_meter = DistanceMeter(analog_value_provider)
+    self._distance_meter.on_object_passed = self._plant_passed_distance_meter
+    self._next_move_correction = 0
+    self._on_move_complete = lambda: None
 
-    def init_move(self):
-        self._state = Conveyor.STATE_STEPPING
+  def _plant_passed_distance_meter(self):
+    motor_pos = self._motor.position()
+    halfway_point = (self._position_at_move_start + self._position_at_move_end) / 2
+    if motor_pos < halfway_point:
+      # we're late. We need to correct by moving more.
+      self._next_move_correction = motor_pos - self._position_at_move_start
+    else:
+      # we're early. We need to correct by moving less.
+      self._next_move_correction = motor_pos - self._position_at_move_end
 
-    def move_conveyor(self, how_much, speed=0.5, on_complete=lambda:None):
+  def on_move_done(self):
+      self._moves_done += 1
+      self._on_move_complete()
+      self._on_move_complete = lambda: None
+      self._position_at_move_start = self._position_at_move_end
+
+  def move(self, links_count, on_complete=lambda: None):
         if self._motor.is_busy():
             on_complete()
             return
-        self._last_move_start_pos = self._current_position
-        dest_position = self._current_position + how_much
-        self._motor.goto_absolute_position(dest_position, speed * 0.3, on_complete=on_complete)
-        self._current_position = dest_position
+        self._on_move_complete = on_complete
+        self._position_at_move_end = self._position_at_move_start + links_count * POS_PER_LINK + self._next_move_correction
+        self._next_move_correction = 0
+        self._motor.goto_absolute_position(self._position_at_move_end, CONVEYOR_SPEED, on_complete=self.on_move_done)
 
-    def end_move(self):
-        self._state = Conveyor.STATE_WAITING
-        self._last_move_start_pos = None
+  def phase(self):
+    if self._position_at_move_start == self._position_at_move_end:
+      return 0
+    return (self._motor.position() - self._position_at_move_start) / (self._position_at_move_end - self._position_at_move_start)
 
-    def is_moving(self):
-        return self._state == Conveyor.STATE_STEPPING
+class Conveyor(Widget):
+
+    def __init__(self, motor, analog_value_provider, director):
+      Widget.__init__(self)
+      self._director = director
+      self._belt = Belt(motor, analog_value_provider)
+      self.plants = [Plant(idx, self._belt) for idx in range(PLANT_COUNT)]
+      self.on_move_complete_listeners = []
+      self._phase_listeners = []
+
+    def _notify_on_move_complete_listeners(self):
+      for listener in self.on_move_complete_listeners:
+        listener()
+
+    def add_phase_listener(self, phase, handler):
+        self._phase_listeners.append(PhaseListener(phase, handler, self))
+
+    def move_and_wait(self, callback=lambda:None):
+      s = (Script()
+        .add_async_step(lambda c: self._belt.move(LINKS_PER_MOVE, c))
+        .add_step(self._notify_on_move_complete_listeners)
+        .add_sleep(PAUSE_DURATION)
+        .add_step(self.idle)
+      )
+      self._director.execute(s)
+
+    def idle(self):
+      if self.on:
+        self.move_and_wait()
+
+    def when_turn_on(self):
+      self.move_and_wait()
 
     def phase(self):
-        if self._last_move_start_pos == None:
-            return 0
-        return min(1, (self._motor.position() - self._last_move_start_pos) / (self._current_position - self._last_move_start_pos))
+      return self._belt.phase()
 
-    def _direction(self):
-        return 1 if self._speed() > 0 else -1
 
-    def _speed(self):
-        pot = self._controls.potentiometer.value
-        if pot < 0.1:
-            return 0
-        else:
-            return pot
-    
-    def reset_position(self):
-        self._motor.reset_position()
-        self._current_position = 0
+class PhaseListener(TickAware):
+    def __init__(self, phase, handler, conveyor):
+        TickAware.__init__(self)
+        self._phase = phase
+        self._handler = handler
+        self._conveyor = conveyor
+        self._last_phase = conveyor.phase()
 
-    CALIBRATION_STEP = int(POS_PER_LINK /4)
-    CALIBRATION_SPEED = 0.3
+    def tick(self, t, d):
+        current_phase = self._conveyor.phase()
+        if current_phase != self._last_phase:
+            if ((
+                self._last_phase < self._phase and self._phase <= current_phase)
+                or (self._last_phase < self._phase and current_phase < self._last_phase) # rollover
+            ):
+                self._handler()
+            self._last_phase = current_phase
 
-    def calibration_forward(self, on_complete=lambda:None):
-        self.move_conveyor(Conveyor.CALIBRATION_STEP, Conveyor.CALIBRATION_SPEED, on_complete)
-
-    def calibration_backward(self, on_complete=lambda:None):
-        self.move_conveyor(-Conveyor.CALIBRATION_STEP, Conveyor.CALIBRATION_SPEED, on_complete)
 

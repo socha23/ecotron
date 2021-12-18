@@ -3,7 +3,7 @@ from adafruit_mcp230xx.digital_inout import DigitalInOut, _enable_bit, _clear_bi
 from tick_aware import TickAware
 
 class BufferingMcp23017(MCP23017, TickAware):
-    
+
     def __init__(self, i2c, address, reset=True):
         MCP23017.__init__(self, i2c, address=address, reset=reset)
         TickAware.__init__(self)
@@ -15,14 +15,18 @@ class BufferingMcp23017(MCP23017, TickAware):
 
     def tick(self, time_s, delta_s):
         if self._gpio_write_buffer != None:
-            self.gpio = self._gpio_write_buffer
+            try:
+                self.gpio = self._gpio_write_buffer
+            except:
+                print(f"IOError in BufferingMcp")
+                pass
         self._gpio_read_buffer = self.gpio
         self._gpio_write_buffer = self._gpio_read_buffer
 
     def get_pin(self, pin):
         assert 0 <= pin <= 15
         return BufferingDigitalInOut(pin, self)
-    
+
 
 class BufferingDigitalInOut(DigitalInOut):
     def __init__(self, pin_number, mcp230xx):
@@ -40,4 +44,3 @@ class BufferingDigitalInOut(DigitalInOut):
         else:
             self._mcp._gpio_write_buffer = _clear_bit(self._mcp._gpio_write_buffer, self._pin)
             self._mcp._gpio_read_buffer = _clear_bit(self._mcp._gpio_read_buffer, self._pin)
- 

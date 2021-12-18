@@ -1,6 +1,7 @@
 import board
 from digitalio import DigitalInOut
 from time import sleep
+import logging
 
 from components.led import LED
 from ecotron import Ecotron
@@ -12,8 +13,8 @@ def led_on_pin(pin_no):
     return LED(DigitalInOut(pin_no))
 
 if __name__ == '__main__':
-    sleep(5)
-    DEFAULT_CONTROLLER.on = True
+    sleep(1)
+    logging.basicConfig(level=logging.INFO)
     hub = connect_technic_hub(ECOTRON_TECHNIC_HUB_MAC, led_on_pin(board.D27), led_on_pin(board.D22))
     ecotron = Ecotron(hub)
 

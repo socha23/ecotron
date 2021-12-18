@@ -7,6 +7,11 @@ class SpeechLines:
 
     CONVEYOR_CALIBRATION_STARTED = "Conveyor calibration started"
     CONVEYOR_CALIBRATION_COMPLETE = "Conveyor calibration complete"
+
+    PRESSURIZING_AIRLOCK = "Pressurizing airlock"
+    DEPRESSURIZING_AIRLOCK = "Depressurizing airlock"
+
+    WELCOME_COMMANDER = "Welcome to Terrabiology Institute, Commander"
     
     
 clips_by_text = dict()

@@ -2,18 +2,18 @@ import threading
 import time
 
 TICK_AWARES = []
-DEFAULT_TICK_TIME = 0.01
+DEFAULT_TICK_TIME = 0
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 class TickAwareController:
-    def __init__(self, initial_time = time.time(), tick_time = DEFAULT_TICK_TIME, debug=False):
+    def __init__(self, initial_time = time.time(), tick_time = 0, debug=False):
         self._tick_awares = []
         self._time = initial_time
         self._tick_time = tick_time
-        self.on = False        
+        self.on = False
         self._debug = debug
         threading.Thread(target=self.tick_thread, daemon=True, name="tick thread").start()
 
@@ -47,7 +47,7 @@ class TickAwareController:
         self._tick_awares.remove(tick_aware)
 
 
-DEFAULT_CONTROLLER = TickAwareController(tick_time=0)
+DEFAULT_CONTROLLER = TickAwareController(DEFAULT_TICK_TIME)
 
 class TimeAware:
     def __init__(self, controller=DEFAULT_CONTROLLER):
@@ -67,7 +67,7 @@ class SpentTimeCalculator:
 
     def tick_enter(self):
         self._last_tick_enter = time.time()
-        
+
     def tick_leave(self):
         self._count += 1
         self._cumulative_time += (time.time() - self._last_tick_enter)

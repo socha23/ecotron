@@ -3,10 +3,10 @@ from ecotron.properties import rgb
 COLOR_STEP = 0.02
 
 class ColorController:
-    
+
     def __init__(self):
         self._current_property = None
-    
+
 
     def set_current_property(self, property):
         self._current_property = property
@@ -32,3 +32,4 @@ class ColorController:
 
         self._current_property.set_value((r, g, b))
 
+DEFAULT_COLOR_CONTROLLER = ColorController()

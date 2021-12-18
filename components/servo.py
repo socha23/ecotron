@@ -31,7 +31,7 @@ class ServoAnimator(TimeAware):
 
         self._move_end_angle = angle_to
         self._move_end_time = self.current_time() + duration_s
-                
+
     def is_animating(self):
         return self._move_start_time != None
 
@@ -54,25 +54,26 @@ class ServoAnimator(TimeAware):
             return
 
         self._last_frame_at = time
-        
+
         d_t = (time - self._move_start_time) / (self._move_end_time - self._move_start_time)
-        
+
         d_t = max(0, min(1, d_t))
         new_angle = self._move_start_angle + (self._move_end_angle - self._move_start_angle) * d_t
         self._servo.angle = new_angle
 
         if d_t == 1:
             self.stop()
-        
+
 
 class Servo(TickAware):
 
     MIN_DISTANCE = 1
     SERVO_TOLERANCE = 0.5
 
-    def __init__(self, servo_from_servokit, angle=90, min_angle=0, max_angle=180):        
+    def __init__(self, servo_from_servokit, angle=90, min_angle=0, max_angle=180, min_pulse_witdh_range=750, max_pulse_witdh_range=2250):
         TickAware.__init__(self)
         self._servo = servo_from_servokit
+        self._servo.set_pulse_width_range(min_pulse_witdh_range, max_pulse_witdh_range)
         atexit.register(self.close)
 
         self._angle = angle
@@ -90,14 +91,19 @@ class Servo(TickAware):
 
         # hush
         HUSH_AFTER = 0.5
-        if (self._move_started_on != None 
-                and time - self._move_started_on > HUSH_AFTER 
-                and abs(self._angle - self._servo.angle) < Servo.SERVO_TOLERANCE):
+
+        ALWAYS_HUSH_AFTER = 5
+
+        if (self._move_started_on != None
+                and (
+                    (time - self._move_started_on > HUSH_AFTER and abs(self._angle - self._servo.angle) < Servo.SERVO_TOLERANCE)
+                    or time - self._move_started_on > ALWAYS_HUSH_AFTER
+                )):
             self._servo.angle = None
             self._move_started_on = None
 
     def close(self):
-        self._servo.angle = None        
+        self._servo.angle = None
 
     def move_to(self, new_angle, speed=1, callback=None):
         speed = max(speed, 0.1)
@@ -120,8 +126,8 @@ class Servo(TickAware):
         else:
             self._angle = None
             self._servo.angle = None
-       
+
     def set_angle(self, new_angle):
         self.angle = new_angle
-    
+
 
