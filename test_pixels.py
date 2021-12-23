@@ -12,11 +12,11 @@ from value_source import RGB
 
 neopixels = NeopixelStrip(board.D21, 117)
 
-np = NeopixelSegment(neopixels, 95, 10)
+np = NeopixelSegment(neopixels, 96, 1)
 
-np.source = RGB(255, 255, 255)
+np.source = RGB(255, 0, 0)
 DEFAULT_CONTROLLER.on = True
-
+print("Boom")
 input()
 
 

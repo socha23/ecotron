@@ -13,7 +13,7 @@ from components.servo import Servo
 kit = ServoKit(channels=16, address=0x42)
 
 
-s = kit.servo[11]
+s = kit.servo[13]
 
 # bebop kit1, servo 13:
 # min_range = 700
@@ -31,13 +31,32 @@ s = kit.servo[11]
 # min_range = 700
 # max_range = 2900
 
+# reactor kit3, servo 15 (tentacles-stretch):
+# min_range = 600
+# max_range = 2900
+# tentacle_hidden = 140
+# tentacle_action = 100
+# tentacle_all_out = 0
+
+# reactor kit3, servo 14 (tentacles-rotate):
+# min_range = 600
+# max_range = 2900
+# tentacle_max_fold = 140
+# tentacle_straight = 110
+# tentacle_all_out = 60
+
+# reactor kit3, servo 13 (uprighter):
+# min_range = 700
+# max_range = 2900
+# neutral = 20
+# closed = 120
 
 min_range = 700
 max_range = 2900
 
 
 s.set_pulse_width_range(min_range, max_range)
-angle = 90
+angle = 20
 
 #135 = closed
 
@@ -56,10 +75,10 @@ angle = 90
 #    max_range += 50
 
 while True:
-    print(f"setting angle {angle}")
-    s.angle = angle
-    angle -= 5
-    input()
+   print(f"setting angle {angle}")
+   s.angle = angle
+   angle += 10
+   input()
 
 #s.set_pulse_width_range(1450, 2200) # first, non-converted 1370
 

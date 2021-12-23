@@ -30,7 +30,9 @@ class EcotronProperties:
         self.reactor_door_open = Property("Reactor door open", 0)
         self.reactor_lights_on = Property("Reactor lights on", 0)
         self.reactor_fan_lights_on = Property("Reactor fan lights on", 0)
-        self.reactor_fan_lights_color = Property("Reactor fan lights color RGB", rgb(20, 0, 0))
+        self.reactor_fan_lights_color = Property("Reactor fan lights color RGB", rgb(255, 0, 0))
+
+        self.laboratory_on = Property("Laboratory on", 0)
 
 class Property:
     def __init__(self, name="unnamed property", initial_value=None):

@@ -14,14 +14,14 @@ class BufferingMcp23017(MCP23017, TickAware):
         self._gpio_write_buffer =  self.gpio
 
     def tick(self, time_s, delta_s):
-        if self._gpio_write_buffer != None:
-            try:
+        try:
+            if self._gpio_write_buffer != None:
                 self.gpio = self._gpio_write_buffer
-            except:
-                print(f"IOError in BufferingMcp")
-                pass
-        self._gpio_read_buffer = self.gpio
-        self._gpio_write_buffer = self._gpio_read_buffer
+            self._gpio_read_buffer = self.gpio
+            self._gpio_write_buffer = self._gpio_read_buffer
+        except:
+            print(f"IOError in BufferingMcp")
+            pass
 
     def get_pin(self, pin):
         assert 0 <= pin <= 15

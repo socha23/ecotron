@@ -61,7 +61,8 @@ class Actor(Widget):
             self._current_script_executor = None
 
     def _execute(self, script):
-        self._current_script_executor = execute(script)
+        if self.on:
+            self._current_script_executor = execute(script)
 
 
 class PausingActor(Actor):
@@ -96,6 +97,10 @@ class PausingActor(Actor):
             .add_async_step(lambda c: action(c))
             .add_step(self._action_completed)
         )
+
+    def force_script(self, script):
+        self._execute(script.add_step(self._action_completed))
+
 
     # OVERRIDE THIS
     def do_action(self, callback):

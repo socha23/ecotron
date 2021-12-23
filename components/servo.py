@@ -32,17 +32,18 @@ class ServoAnimator(TimeAware):
         self._move_end_angle = angle_to
         self._move_end_time = self.current_time() + duration_s
 
+#        print(f"animate from {angle_from} to {angle_to}")
+
     def is_animating(self):
         return self._move_start_time != None
 
     def stop(self):
-        if self._callback:
-            self._callback()
-
         self._move_start_time = None
         self._move_start_angle = None
         self._move_end_time = None
         self._move_end_angle = None
+        if self._callback:
+            self._callback()
 
     def tick(self):
         if not self.is_animating():
@@ -60,8 +61,10 @@ class ServoAnimator(TimeAware):
         d_t = max(0, min(1, d_t))
         new_angle = self._move_start_angle + (self._move_end_angle - self._move_start_angle) * d_t
         self._servo.angle = new_angle
+#        print(f"angle {new_angle}, dt {d_t}")
 
         if d_t == 1:
+#            print("stopping")
             self.stop()
 
 
