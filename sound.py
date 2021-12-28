@@ -35,15 +35,22 @@ class Clip(TickAware):
     self._on_complete = lambda: None
     self._intensity = None
 
-  def play(self, on_complete=lambda:None):    
+  def loop(self, fadein=0):
+      return self.play(loops=-1, fadein=fadein)
+
+  def play(self, on_complete=lambda:None, loops=0, fadein=0):
     global _master_volume
     self._sound.set_volume(_master_volume)
-    self._channel = self._sound.play()
+    self._channel = self._sound.play(loops=loops, fade_ms=int(fadein * 1000))
     if self._channel != None:
       self.update_channel_volume()
       self._on_complete = on_complete
       self._playing = True
       active_clips.add(self)
+
+  def fadeout(self, time_s):
+      if self._playing:
+          self._sound.fadeout(int(time_s * 1000))
 
   def duration_s(self):
     return self._sound.get_length()
@@ -55,7 +62,7 @@ class Clip(TickAware):
       left, right = self._stereo
       if self._channel != None:
         self._channel.set_volume(left * self.volume * _master_volume, right * self.volume * _master_volume)
-    
+
   @property
   def volume(self):
     return self._volume
@@ -98,18 +105,18 @@ class Intensity:
     self._precompute_samples(samples)
 
   def _precompute_samples(self, samples):
-    samples_mono = np.maximum(samples[:,0], samples[:,1])    
+    samples_mono = np.maximum(samples[:,0], samples[:,1])
     samples_count = samples_mono.shape[0]
 
     samples_per_frame = int(SAMPLE_RATE / self._sample_rate)
-    
+
     for i in range(int(samples_count / samples_per_frame)):
         frame_samples = samples_mono[i * samples_per_frame : (i + 1) * samples_per_frame]
         self._intensity_samples.append(np.max(np.abs(frame_samples)) / SAMPLE_MAX_VAL)
 
 
   def at(self, time_s):
-    
+
     idx = int(time_s * self._sample_rate)
     if idx >= len(self._intensity_samples):
       return 0
@@ -117,10 +124,10 @@ class Intensity:
       return self._intensity_samples[idx]
 
 
-class IntensityValueSource(ValueSource):  
+class IntensityValueSource(ValueSource):
   #DELAY = 0.48
   DELAY = 0.4
-  
+
   def __init__(self, intensity):
     ValueSource.__init__(self)
     self._intensity = intensity
@@ -130,7 +137,7 @@ class IntensityValueSource(ValueSource):
       t = self.current_time() - self._start_time
       if t < IntensityValueSource.DELAY:
           return 0
-      else:      
+      else:
           return self._intensity.at(t - IntensityValueSource.DELAY)
 
 

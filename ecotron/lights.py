@@ -37,7 +37,8 @@ class Lights(Widget):
 
     def when_turn_off(self):
         self._source.fade_out()
-        self._color_controller.set_current_property(None)
+        if self._color_controller:
+            self._color_controller.set_current_property(None)
 
 
 def floor_lights(lights, color_property, color_controller=None):

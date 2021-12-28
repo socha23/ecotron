@@ -8,12 +8,6 @@ from tick_aware import DEFAULT_CONTROLLER, TickAware
 from value_source import ValueSource, Multiply, Constant
 from components.servo import Servo
 
-#kit = ServoKit(channels=16, address=0x40)
-#kit = ServoKit(channels=16, address=0x41)
-kit = ServoKit(channels=16, address=0x42)
-
-
-s = kit.servo[13]
 
 # bebop kit1, servo 13:
 # min_range = 700
@@ -50,6 +44,28 @@ s = kit.servo[13]
 # max_range = 2900
 # neutral = 20
 # closed = 120
+
+# reactor kit3, servo 12 (chair):
+# min_range = 700
+# max_range = 2900
+# axe = 20
+# end of tentacles = 50
+# room = 100
+# tentacle_plant = 120
+# alert = 130
+# lab_corner = 140
+# computer = 180
+
+# reactor kit3, servo 7 (stalkplant):
+# min_range = 700
+# max_range = 2900
+# min = 20
+# max = 140
+
+#kit = ServoKit(channels=16, address=0x40)
+#kit = ServoKit(channels=16, address=0x41)
+kit = ServoKit(channels=16, address=0x42)
+s = kit.servo[7]
 
 min_range = 700
 max_range = 2900

@@ -71,6 +71,9 @@ class PausingActor(Actor):
         self._min_idle_time = min_idle_time
         self._max_idle_time = max_idle_time
 
+    def _get_idle_time(self):
+        return random.uniform(self._min_idle_time, self._max_idle_time)
+
     def when_turn_on(self):
         self._do_action()
 
@@ -82,7 +85,7 @@ class PausingActor(Actor):
 
     def _pause(self):
         self._execute(Script()
-            .add_sleep(random.uniform(self._min_idle_time, self._max_idle_time))
+            .add_sleep(self._get_idle_time())
             .add_step(self._pause_completed)
         )
 

@@ -12,8 +12,12 @@ class SpeechLines:
     DEPRESSURIZING_AIRLOCK = "Depressurizing airlock"
 
     WELCOME_COMMANDER = "Welcome to Terrabiology Institute, Commander"
-    
-    
+
+    TENTACLE_PLANT_AGITATED = "Warning. Tentacle plant shows unusual activity"
+    TENTACLE_PLANT_BREAKOUT = "Containment breached. Initiate emergency protocols"
+    TENTACLE_PLANT_PEACE = "Peace restored"
+
+
 clips_by_text = dict()
 
 for line_code in [x for x in dir(SpeechLines) if not x.startswith("__")]:

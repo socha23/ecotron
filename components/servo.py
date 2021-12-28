@@ -109,7 +109,7 @@ class Servo(TickAware):
         self._servo.angle = None
 
     def move_to(self, new_angle, speed=1, callback=None):
-        speed = max(speed, 0.1)
+        speed = max(speed, 0.01)
         angle_per_s = 360 * speed # speed * (self.max_angle - self.min_angle)
         duration = abs(new_angle - self._angle) / angle_per_s
         self._animator.animate_move(self._angle, new_angle, duration, callback)

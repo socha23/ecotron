@@ -1,6 +1,6 @@
 from ecotron.reactor import Reactor, ReactorDoor, ReactorFanLights, ReactorWarningLights
 from ecotron.color_controller import DEFAULT_COLOR_CONTROLLER
-from ecotron.tentacle_plant import TentaclePlant
+from ecotron.laboratory import Laboratory, TentaclePlant
 from ecotron.xy_controller import DEFAULT_XY_CONTROLLER
 from ecotron.aquarium import Aquarium
 from value_source import RGB
@@ -217,12 +217,15 @@ class EcotronBase:
             self.reactor_fan_lights.bind_to_property(properties.reactor_fan_lights_on)
             self.reactor = Reactor(np_reactor_main)
 
-            self.tentacle_plant = TentaclePlant(
+            self.laboratory = Laboratory(
                 stretch_servo=Servo(servo_kit_3.servo[15], angle=140, min_pulse_witdh_range=600, max_pulse_witdh_range=2900),
                 rotate_servo=Servo(servo_kit_3.servo[14], angle=110, min_pulse_witdh_range=600, max_pulse_witdh_range=2900),
-                uprighter_servo=Servo(servo_kit_3.servo[13], angle=20, min_pulse_witdh_range=700, max_pulse_witdh_range=2900)
+                uprighter_servo=Servo(servo_kit_3.servo[13], angle=20, min_pulse_witdh_range=700, max_pulse_witdh_range=2900),
+                chair_servo=Servo(servo_kit_3.servo[12], angle=180, min_pulse_witdh_range=700, max_pulse_witdh_range=2900),
+                stalk_servo=Servo(servo_kit_3.servo[7], angle=80, min_pulse_witdh_range=700, max_pulse_witdh_range=2900),
+                siren_led=PWMLED(servo_kit_3._pca.channels[8]),
             )
-            self.tentacle_plant.bind_to_property(properties.laboratory_on)
+            self.laboratory.bind_to_property(properties.laboratory_on)
 
 
 def bind_elevator(elevator, elevator_controls):
@@ -259,7 +262,7 @@ def bind_controls_to_actions(controls, base):
     bind_elevator(base.elevator, controls.elevator_controls)
 
     controls.conveyor_controls.button_blue.on_press = base.airlock.run_cycle_from_outside
-    controls.conveyor_controls.button_yellow.on_press = base.tentacle_plant.toggle_attack
+    controls.conveyor_controls.button_yellow.on_press = base.laboratory.toggle_attack
 
     controls.conveyor_controls.button_green.on_press = base.stairsdude.random_rotation
     controls.conveyor_controls.button_red.on_press = base.reactor.boom
