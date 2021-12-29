@@ -1,8 +1,14 @@
+from colorsys import hsv_to_rgb, rgb_to_hsv
 from ecotron.properties import LightMode
 from speech import say, SpeechLines
 
 COLOR_STEP = 0.02
 PARAM_STEP = 0.1
+
+HUE_STEP = 0.01
+SATURATION_STEP = 0.1
+VALUE_STEP = 0.1
+
 
 MODES = [LightMode.CONSTANT, LightMode.PULSE, LightMode.PLASMA]
 LINES = {
@@ -13,29 +19,36 @@ LINES = {
 
 class ColorController:
 
-    def __init__(self):
+    def __init__(self, hsv_mode = True):
         self._props = None
-
+        self._hsv_mode = hsv_mode
 
     def set_current_properties(self, properties):
         self._props = properties
 
     def change_red(self, sign):
-        self._change_color(sign * COLOR_STEP, 0, 0)
+        if self._hsv_mode:
+            self._change_hsv(sign * HUE_STEP, 0, 0)
+        else:
+            self._change_rgb(sign * COLOR_STEP, 0, 0)
 
     def change_green(self, sign):
-        self._change_color(0, sign * COLOR_STEP, 0)
+        if self._hsv_mode:
+            self._change_hsv(0, sign * SATURATION_STEP, 0)
+        else:
+            self._change_rgb(0, sign * COLOR_STEP, 0)
 
     def change_blue(self, sign):
-        self._change_color(0, 0, sign * COLOR_STEP)
+        if self._hsv_mode:
+            self._change_hsv(0, 0, sign * VALUE_STEP)
+        else:
+            self._change_rgb(0, 0, sign * COLOR_STEP)
 
     def change_x(self, sign):
         self.change_mode(sign)
 
     def change_y(self, sign):
         self._change_param(sign * PARAM_STEP)
-
-
 
     def change_mode(self, sign):
         if not self._props:
@@ -61,7 +74,7 @@ class ColorController:
             self._props.param.set_value(new_val)
 
 
-    def _change_color(self, d_r, d_g, d_b):
+    def _change_rgb(self, d_r, d_g, d_b):
         if not self._props:
             return
         r, g, b = self._props.color.value()
@@ -70,5 +83,22 @@ class ColorController:
         b = max(0, min(1, b + d_b))
         print(f"color changed to {r, g, b}")
         self._props.color.set_value((r, g, b))
+
+    def _change_hsv(self, d_h, d_s, d_v):
+
+        if not self._props:
+            return
+        r, g, b = self._props.color.value()
+        h, s, v = rgb_to_hsv(r, g, b)
+        new_h = (h + d_h) % 1
+        new_s = clamp((s + d_s))
+        new_v = clamp((v + d_v))
+        r, g, b = hsv_to_rgb(new_h, new_s, new_v)
+
+        print(f"color changed to {r, g, b}")
+        self._props.color.set_value((r, g, b))
+
+def clamp(v):
+    return max(0, min(1, v))
 
 DEFAULT_COLOR_CONTROLLER = ColorController()
