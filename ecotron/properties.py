@@ -15,6 +15,7 @@ class EcotronProperties:
         self.jungle_on = Property("Jungle on", 0)
 
         self.light_strip_on = Property("Light strip on", 1)
+        self.floor_lights_color = Property("Floor lights color RGB", rgb(10, 60, 50))
 
         self.top_lights_jungle_on = Property("Jungle on", 0)
         self.top_lights_jungle_color = Property("Top lights jungle color RGB", rgb(60, 50, 20))
@@ -22,10 +23,11 @@ class EcotronProperties:
         self.door_lights_on = Property("Door lights on", 1)
         self.door_lights_color = Property("Door lights color RGB", rgb(20, 30, 60))
 
-        self.floor_lights_color = Property("Floor lights color RGB", rgb(10, 60, 50))
 
         self.top_lights_floor_1_on = Property("Top lights floor 1 on", 1)
         self.top_lights_floor_1_color = Property("Top lights floor 1 color RGB", rgb(60, 50, 20))
+
+        self.top_lights_floor_1 = LightProperties("Top lights floor 1", rgb(60, 50, 20))
 
         self.aquarium_lights_on = Property("Aquarium lights on", 0)
         self.aquarium_color = Property("Aquarium color", (0, 0.85, 1))

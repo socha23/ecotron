@@ -4,6 +4,7 @@ from typing import Collection
 from value_source import RGB, Concat, GradientDefinition, Max, repeated_pulse, FadeInOut, Multiply, Constant, Gradient, GradientRandomWalk
 from ecotron.widget import Widget
 import gradients
+from ecotron.properties import LightProperties, Property
 
 def flash_pixels(pixels, duration=1):
     src = pixels.source
@@ -19,15 +20,30 @@ def flash_pixels(pixels, duration=1):
 
 class Lights(Widget):
 
-    def __init__(self, lights, source, color_property=None, color_controller=DEFAULT_COLOR_CONTROLLER):
+    def __init__(self, lights, source,
+    color_property=None,
+    on_property=None,
+
+    color_controller=DEFAULT_COLOR_CONTROLLER,
+    color_control=True):
         Widget.__init__(self)
-        if color_property == None:
-            color_property = source
         self._color_property = color_property
-        self._source = FadeInOut(duration_s=0.5, source=source)
+        self._on_property = on_property
+        self._color_control = color_control
+
+        if isinstance(source, Property):
+            self._color_property = source
+        elif isinstance(source, LightProperties):
+            self._color_property = source.color
+            self._on_property = source.on
+
+        self._source = FadeInOut(duration_s=0.5, source=self._color_property)
         self._lights = lights
         self._lights.source = self._source
         self._color_controller=color_controller
+
+        if self._on_property:
+            self.bind_to_property(self._on_property)
 
     def when_turn_on(self):
         self._source.fade_in()
@@ -37,7 +53,7 @@ class Lights(Widget):
 
     def when_turn_off(self):
         self._source.fade_out()
-        if self._color_controller:
+        if self._color_controller and self._color_control:
             self._color_controller.set_current_property(None)
 
 

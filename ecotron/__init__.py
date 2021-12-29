@@ -162,8 +162,9 @@ class EcotronBase:
                 )
             self.floor_lights.bind_to_property(properties.light_strip_on)
 
-            self.top_lights_floor_1 = Lights(np_tl_1, properties.top_lights_floor_1_color, color_controller=color_controller)
-            self.top_lights_floor_1.bind_to_property(properties.top_lights_floor_1_on)
+            self.top_lights_floor_1 = Lights(np_tl_1, properties.top_lights_floor_1)
+            #self.top_lights_floor_1 = Lights(np_tl_1, properties.top_lights_floor_1_color, color_controller=color_controller)
+            #self.top_lights_floor_1.bind_to_property(properties.top_lights_floor_1_on)
 
             self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), np_elevator, properties)
 
