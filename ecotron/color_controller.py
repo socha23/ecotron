@@ -1,5 +1,3 @@
-from ecotron.properties import rgb
-
 COLOR_STEP = 0.02
 
 class ColorController:

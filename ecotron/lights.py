@@ -1,10 +1,8 @@
 from ecotron.color_controller import DEFAULT_COLOR_CONTROLLER
 from director import execute, Script
-from typing import Collection
-from value_source import RGB, Concat, GradientDefinition, Max, repeated_pulse, FadeInOut, Multiply, Constant, Gradient, GradientRandomWalk
+from value_source import RGB, Concat, GradientDefinition, Max, Sine, ValueSource, repeated_pulse, FadeInOut, Multiply, Constant, Gradient, GradientRandomWalk
 from ecotron.widget import Widget
-import gradients
-from ecotron.properties import LightProperties, Property
+from enum import Enum
 
 def flash_pixels(pixels, duration=1):
     src = pixels.source
@@ -20,64 +18,58 @@ def flash_pixels(pixels, duration=1):
 
 class Lights(Widget):
 
-    def __init__(self, lights, source,
-    color_property=None,
-    on_property=None,
-
-    color_controller=DEFAULT_COLOR_CONTROLLER,
-    color_control=True):
+    def __init__(self, lights, properties, color_control=True):
         Widget.__init__(self)
-        self._color_property = color_property
-        self._on_property = on_property
-        self._color_control = color_control
-
-        if isinstance(source, Property):
-            self._color_property = source
-        elif isinstance(source, LightProperties):
-            self._color_property = source.color
-            self._on_property = source.on
-
-        self._source = FadeInOut(duration_s=0.5, source=self._color_property)
         self._lights = lights
-        self._lights.source = self._source
-        self._color_controller=color_controller
-
-        if self._on_property:
-            self.bind_to_property(self._on_property)
+        self._properties = properties
+        self._color_control = color_control
+        self._source = LightPropertiesSource(lights.size(), properties)
+        self._lights.source = FadeInOut(duration_s=0.5, source=self._source)
+        self.bind_to_property(properties.on)
 
     def when_turn_on(self):
-        self._source.fade_in()
-        if self._color_controller:
-            self._color_controller.set_current_property(self._color_property)
-
+        self._lights.source.fade_in()
+        if self._color_control:
+            DEFAULT_COLOR_CONTROLLER.set_current_property(self._properties.color)
 
     def when_turn_off(self):
-        self._source.fade_out()
-        if self._color_controller and self._color_control:
-            self._color_controller.set_current_property(None)
+        self._lights.source.fade_out()
+        if self._color_control:
+           DEFAULT_COLOR_CONTROLLER.set_current_property(None)
 
 
-def floor_lights(lights, color_property, color_controller=None):
-#    vs = value_source.Multiply(
-#            value_source.Add(
-#                value_source.Constant(0.4),
-#                value_source.Multiply(value_source.Sine(time_s=3), value_source.Constant(0.6))
-#            ),
-#            color_property
-#        )
-    gradient = GradientDefinition([
-        (0, RGB(0, 0, 0)),
-        (1, color_property)
-    ])
-    vs = Concat(*[
-        GradientRandomWalk(gradient, speed=2)
-        for _ in range(lights.size())
-    ])
-    #gradient = gradients.FIRE
-    #vs = Concat(*[
-    #    GradientRandomWalk(gradient, speed_down=0.3)
-    #    for _ in range(lights.size())
-    #])
+class LightPropertiesSource(ValueSource):
+    def __init__(self, size, light_properties):
+        self._size = size
+        self._properties = light_properties
+        self._inner_source = self._create_inner_source()
 
-    return Lights(lights, vs, color_property=color_property, color_controller=color_controller
-    )
+    def value(self):
+        return self._inner_source.value()
+
+    def _create_inner_source(self):
+        p = self._properties
+        mode = p.mode.value()
+        if mode == LightMode.CONSTANT:
+            return p.color
+        elif mode == LightMode.PULSE:
+            return Sine(source=p.color)
+        elif mode == LightMode.PLASMA:
+            gradient = GradientDefinition([
+                (0, RGB(0, 0, 0)),
+                (1, p.color)
+            ])
+            return Concat(*[
+                GradientRandomWalk(gradient, speed=2)
+                for _ in range(self._size)
+            ])
+        else:
+            raise Exception(f"Unknown light mode: {mode}")
+
+
+
+class LightMode(Enum):
+    CONSTANT = 0,
+    PULSE = 1,
+    PLASMA = 2,
+

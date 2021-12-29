@@ -545,7 +545,7 @@ def repeated_pulse(how_many=3, duration=1, source=AlwaysOn()):
 
 # sine pulse
 class Sine(_Decorator):
-    def __init__(self, time_s=1, source=AlwaysOn(), common_phase=True):
+    def __init__(self, time_s=1, source=AlwaysOn(), common_phase=False):
         _Decorator.__init__(self, source)
         self._time_s = time_s
         self._phase_start = 0 if common_phase else self.current_time() - (time_s * 0.75)

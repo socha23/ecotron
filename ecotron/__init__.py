@@ -37,7 +37,7 @@ from components.color_dials import ColorDials
 from tick_aware import DEFAULT_CONTROLLER
 from speech import say, SpeechLines
 from sound import set_master_volume
-from ecotron.lights import Lights, floor_lights
+from ecotron.lights import Lights
 from ecotron.jungle import Jungle
 
 logger = logging.getLogger(__name__)
@@ -149,14 +149,12 @@ class EcotronBase:
             self.top_lights_jungle = Lights(np_tl_jungle, properties.top_lights_jungle)
             self.door_lights = Lights(NeopixelMultiSegment(np_door), properties.door_lights)
 
-            self.floor_lights = floor_lights(
+            self.light_strip = Lights(
                 NeopixelMultiSegment(np_fl_1_1, FakeNeopixels(2), np_fl_1_2, FakeNeopixels(2), np_fl_1_3,
                 np_fl_1_4,
                 np_fl_2_1,
                 ),
-                properties.light_strip.color, color_controller=color_controller
-                )
-            self.floor_lights.bind_to_property(properties.light_strip_on)
+                properties.light_strip)
 
             self.top_lights_floor_1 = Lights(np_tl_1, properties.top_lights_floor_1)
 

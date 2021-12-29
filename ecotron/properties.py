@@ -1,3 +1,5 @@
+from enum import Enum
+from ecotron.lights import LightMode
 from value_source import ValueSource
 
 def rgb(r, g, b):
@@ -12,12 +14,8 @@ class EcotronProperties:
         self.fans_on = Property("Fans on", 0)
         self.repair_table_on = Property("Repair table on", 0)
         self.elevator_lights_on = Property("Elevator lights on", 1)
-        self.jungle_on = Property("Jungle on", 0)
 
-        self.light_strip = LightProperties("Floor lights", rgb(10, 60, 50))
-
-        self.light_strip_on = Property("Light strip on", 1)
-        self.floor_lights_color = Property("Floor lights color RGB", rgb(10, 60, 50))
+        self.light_strip = LightProperties("Floor lights", rgb(10, 60, 50), mode=LightMode.PLASMA)
 
         self.jungle_on = Property("Jungle on", 0)
         self.top_lights_jungle = LightProperties("Top lights jungle", rgb(60, 50, 20))
@@ -62,9 +60,12 @@ class Property:
             self._on_value_change()
 
 
+
 class LightProperties:
-    def __init__(self, name="unnamed lights", color=rgb(255, 255, 255)):
-        self.on = Property(name + " lights on", 0)
+    def __init__(self, name="unnamed lights", color=rgb(255, 255, 255), mode=LightMode.CONSTANT):
+        self.on = Property(name + " on", 0)
         self.color = Property(name + " color", color)
+        self.mode = Property(name + " mode", mode)
+
 
 DEFAULT_ECOTRON_PROPERTIES = EcotronProperties()
