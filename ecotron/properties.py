@@ -65,10 +65,11 @@ class Property:
 
 
 class LightProperties:
-    def __init__(self, name="unnamed lights", color=rgb(255, 255, 255), mode=LightMode.CONSTANT):
+    def __init__(self, name="unnamed lights", color=rgb(255, 255, 255), mode=LightMode.CONSTANT, param=0.5):
         self.on = Property(name + " on", 0)
         self.color = Property(name + " color", color)
         self.mode = Property(name + " mode", mode)
+        self.param = Property(name + " param", param)
 
 
 

@@ -1,5 +1,6 @@
 from ecotron.color_controller import DEFAULT_COLOR_CONTROLLER
 from director import execute, Script
+from utils import translate
 from value_source import RGB, Concat, GradientDefinition, Max, Sine, ValueSource, repeated_pulse, FadeInOut, Multiply, Constant, Gradient, GradientRandomWalk
 from ecotron.widget import Widget
 from enum import Enum
@@ -45,6 +46,7 @@ class LightPropertiesSource(ValueSource):
         self._properties = light_properties
         self._inner_source = self._create_inner_source()
         light_properties.mode.on_value_change = lambda _: self.when_switch_mode()
+        light_properties.param.on_value_change = lambda _: self.when_switch_mode()
 
     def when_switch_mode(self):
         self._inner_source = self._create_inner_source()
@@ -58,14 +60,18 @@ class LightPropertiesSource(ValueSource):
         if mode == LightMode.CONSTANT:
             return p.color
         elif mode == LightMode.PULSE:
-            return Sine(source=p.color)
+            # 0 = 5s; 1 = 0.3s
+            speed = translate(p.param.value(), 0, 1, 5, 0.3)
+            return Sine(speed, source=p.color)
         elif mode == LightMode.PLASMA:
+            # 0 = 5s; 1 = 0.3s
+            speed = translate(p.param.value(), 0, 1, 2, 0.05)
             gradient = GradientDefinition([
                 (0, RGB(0, 0, 0)),
                 (1, p.color)
             ])
             return Concat(*[
-                GradientRandomWalk(gradient, speed=2)
+                GradientRandomWalk(gradient, speed=speed)
                 for _ in range(self._size)
             ])
         else:
