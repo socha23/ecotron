@@ -1,10 +1,13 @@
 from enum import Enum
-from ecotron.lights import LightMode
 from value_source import ValueSource
 
 def rgb(r, g, b):
     return (r / 256, g / 256, b / 256)
 
+class LightMode(Enum):
+    CONSTANT = 0,
+    PULSE = 1,
+    PLASMA = 2,
 
 class EcotronProperties:
     def __init__(self):
@@ -66,6 +69,7 @@ class LightProperties:
         self.on = Property(name + " on", 0)
         self.color = Property(name + " color", color)
         self.mode = Property(name + " mode", mode)
+
 
 
 DEFAULT_ECOTRON_PROPERTIES = EcotronProperties()

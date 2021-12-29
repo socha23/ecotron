@@ -17,6 +17,9 @@ class SpeechLines:
     TENTACLE_PLANT_BREAKOUT = "Containment breached. Initiate emergency protocols"
     TENTACLE_PLANT_PEACE = "Peace restored"
 
+    COLOR_MODE_CONSTANT = "Mode: Constant"
+    COLOR_MODE_PULSE = "Mode: Pulse"
+    COLOR_MODE_PLASMA = "Mode: Plasma"
 
 clips_by_text = dict()
 

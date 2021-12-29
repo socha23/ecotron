@@ -19,9 +19,9 @@ class ColorDials:
         x_encoder.on_change = lambda x: self.on_change_x(x)
         y_encoder.on_change = lambda y: self.on_change_y(y)
 
-    def bind(self, color_controller, xy_controller):
-        self.on_change_red = lambda x : color_controller.change_red(x)
-        self.on_change_green = lambda x : color_controller.change_green(x)
-        self.on_change_blue = lambda x : color_controller.change_blue(x)
-        self.on_change_x = lambda x : xy_controller.change_x(x)
-        self.on_change_y = lambda y : xy_controller.change_y(y)
+    def bind(self, controller):
+        self.on_change_red = lambda x : controller.change_red(x)
+        self.on_change_green = lambda x : controller.change_green(x)
+        self.on_change_blue = lambda x : controller.change_blue(x)
+        self.on_change_x = lambda x : controller.change_x(x)
+        self.on_change_y = lambda y : controller.change_y(y)

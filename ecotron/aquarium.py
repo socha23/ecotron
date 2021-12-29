@@ -1,6 +1,5 @@
 from ecotron.color_controller import DEFAULT_COLOR_CONTROLLER
 from ecotron.properties import DEFAULT_ECOTRON_PROPERTIES
-from ecotron.xy_controller import DEFAULT_XY_CONTROLLER, XyListener
 from typing import ValuesView
 from ecotron.widget import Widget
 from ecotron.lights import flash_pixels
@@ -8,16 +7,16 @@ from value_source import AlwaysOff, RGB, Concat, Constant, Gradient, GradientDef
 
 BRIGHTNESS = 0.5
 
-class _AquariumPropsController(XyListener):
+class _AquariumPropsController:
     def __init__(self):
         pass
 
     def when_turn_on(self):
-        DEFAULT_XY_CONTROLLER.set_current_listener(self)
+#        DEFAULT_XY_CONTROLLER.set_current_listener(self)
         DEFAULT_COLOR_CONTROLLER.set_current_property(DEFAULT_ECOTRON_PROPERTIES.aquarium_color)
 
     def when_turn_off(self):
-        DEFAULT_XY_CONTROLLER.set_current_listener(None)
+ #       DEFAULT_XY_CONTROLLER.set_current_listener(None)
         DEFAULT_COLOR_CONTROLLER.set_current_property(None)
 
     def on_x_changed(self, sign):
@@ -28,10 +27,10 @@ class _AquariumPropsController(XyListener):
         p.set_value(p.value() + sign * 0.02)
 
 
-class Aquarium(Widget, XyListener):
+class Aquarium(Widget):
     def __init__(self, pixel_lines):
         Widget.__init__(self)
-        XyListener.__init__(self)
+        #XyListener.__init__(self)
         self._pixel_lines = pixel_lines
         self._props_controller = _AquariumPropsController()
 

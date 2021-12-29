@@ -1,7 +1,6 @@
 from ecotron.reactor import Reactor, ReactorDoor, ReactorWarningLights
 from ecotron.color_controller import DEFAULT_COLOR_CONTROLLER
 from ecotron.laboratory import Laboratory
-from ecotron.xy_controller import DEFAULT_XY_CONTROLLER
 from ecotron.aquarium import Aquarium
 from ecotron.stairsdude import Stairsdude
 from ecotron.spiderbro import Spiderbro
@@ -62,7 +61,7 @@ class Ecotron:
         controls = EcotronControls()
         properties = DEFAULT_ECOTRON_PROPERTIES
 
-        controls.color_dials.bind(DEFAULT_COLOR_CONTROLLER, DEFAULT_XY_CONTROLLER)
+        controls.color_dials.bind(DEFAULT_COLOR_CONTROLLER)
 
         bind_controls_to_properties(controls, properties)
 

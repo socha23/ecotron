@@ -3,6 +3,7 @@ from director import execute, Script
 from value_source import RGB, Concat, GradientDefinition, Max, Sine, ValueSource, repeated_pulse, FadeInOut, Multiply, Constant, Gradient, GradientRandomWalk
 from ecotron.widget import Widget
 from enum import Enum
+from ecotron.properties import LightMode
 
 def flash_pixels(pixels, duration=1):
     src = pixels.source
@@ -30,18 +31,22 @@ class Lights(Widget):
     def when_turn_on(self):
         self._lights.source.fade_in()
         if self._color_control:
-            DEFAULT_COLOR_CONTROLLER.set_current_property(self._properties.color)
+            DEFAULT_COLOR_CONTROLLER.set_current_properties(self._properties)
 
     def when_turn_off(self):
         self._lights.source.fade_out()
         if self._color_control:
-           DEFAULT_COLOR_CONTROLLER.set_current_property(None)
+           DEFAULT_COLOR_CONTROLLER.set_current_properties(None)
 
 
 class LightPropertiesSource(ValueSource):
     def __init__(self, size, light_properties):
         self._size = size
         self._properties = light_properties
+        self._inner_source = self._create_inner_source()
+        light_properties.mode.on_value_change = lambda _: self.when_switch_mode()
+
+    def when_switch_mode(self):
         self._inner_source = self._create_inner_source()
 
     def value(self):
@@ -65,11 +70,4 @@ class LightPropertiesSource(ValueSource):
             ])
         else:
             raise Exception(f"Unknown light mode: {mode}")
-
-
-
-class LightMode(Enum):
-    CONSTANT = 0,
-    PULSE = 1,
-    PLASMA = 2,
 
