@@ -53,7 +53,7 @@ mcp3008a = MCP3008(spi, cs)
 servo_kit_1 = ServoKit(channels=16, reference_clock_speed=25000000)
 servo_kit_2 = ServoKit(channels=16, address=0x41)
 servo_kit_3 = ServoKit(channels=16, address=0x42)
-neopixels = NeopixelStrip(board.D21, 118)
+neopixels = NeopixelStrip(board.D21, 137)
 
 class Ecotron:
     def __init__(self, hub):
@@ -128,7 +128,18 @@ class EcotronBase:
 
             np_reactor_main = NeopixelSegment(neopixels, 96, 10)
 
-            np_elevator = NeopixelSegment(neopixels, 106, 12)
+            # px 106
+            np_laboratory_main_lights = NeopixelSegment(neopixels, 106, 8)
+            np_top = NeopixelSegment(neopixels, 114, 2)
+            np_laboratory_stalker = NeopixelSegment(neopixels, 116, 2)
+            # 1 dead
+            np_laboratory_between_tanks = NeopixelSegment(neopixels, 119, 1)
+            # 1 dead
+            np_laboratory_tentacle = NeopixelSegment(neopixels, 121, 2)
+
+            # px 124
+
+            np_elevator = NeopixelSegment(neopixels, 125, 12)
 
 
             properties.master_volume.on_value_change = lambda x : set_master_volume(x)
@@ -224,6 +235,9 @@ class EcotronBase:
                 chair_servo=Servo(servo_kit_3.servo[12], angle=180, min_pulse_witdh_range=700, max_pulse_witdh_range=2900),
                 stalk_servo=Servo(servo_kit_3.servo[7], angle=80, min_pulse_witdh_range=700, max_pulse_witdh_range=2900),
                 siren_led=PWMLED(servo_kit_3._pca.channels[8]),
+                top_light_pixels=np_laboratory_main_lights,
+                stalker_light_pixels=np_laboratory_stalker,
+                tentacle_light_pixels=np_laboratory_tentacle,
             )
             self.laboratory.bind_to_property(properties.laboratory_on)
 
@@ -237,24 +251,31 @@ def bind_elevator(elevator, elevator_controls):
 
 def bind_controls_to_properties(controls, properties):
 
-    controls.conveyor_controls.toggle.bind_property(properties.control_panel_ligths_on)
+    controls.conveyor_controls.toggle.bind_property(properties.master_volume, properties.control_panel_ligths_on)
 
     control_toggles = controls.control_toggle_board.toggles
-    control_toggles[0].bind_property(properties.master_volume)
-    control_toggles[1].bind_property(properties.conveyor_on)
-    control_toggles[2].bind_property(properties.fans_on)
-    control_toggles[3].bind_property(properties.repair_table_on)
-    control_toggles[4].bind_property(properties.jungle_on)
+
+    control_toggles[0].bind_property(properties.jungle_on)
+    control_toggles[1].bind_property(properties.repair_table_on)
+    control_toggles[4].bind_property(properties.laboratory_on)
+    control_toggles[5].bind_property(properties.conveyor_on)
+    control_toggles[7].bind_property(properties.fans_on)
     control_toggles[8].bind_property(properties.laboratory_on)
     control_toggles[9].bind_property(properties.reactor_door_open)
 
     light_toggles = controls.light_toggle_board.toggles
+
     light_toggles[0].bind_property(properties.top_lights_jungle_on)
-    light_toggles[1].bind_property(properties.top_lights_floor_1_on)
-    light_toggles[2].bind_property(properties.light_strip_on)
-    light_toggles[3].bind_property(properties.elevator_lights_on)
-    light_toggles[4].bind_property(properties.aquarium_lights_on)
-    light_toggles[5].bind_property(properties.door_lights_on)
+    light_toggles[1].bind_property(
+        properties.top_lights_floor_1_on,
+        properties.door_lights_on
+        )
+    light_toggles[2].bind_property(properties.laboratory_stalker_lights_on)
+    light_toggles[3].bind_property(properties.laboratory_tentacle_lights_on)
+    light_toggles[4].bind_property(properties.laboratory_top_lights_on)
+
+    light_toggles[5].bind_property(properties.light_strip_on)
+    light_toggles[7].bind_property(properties.aquarium_lights_on)
     light_toggles[8].bind_property(properties.reactor_fan_lights_on)
     light_toggles[9].bind_property(properties.reactor_lights_on)
 

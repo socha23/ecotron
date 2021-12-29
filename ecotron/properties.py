@@ -8,31 +8,46 @@ class EcotronProperties:
     def __init__(self):
         self.control_panel_ligths_on = Property("Control panel ligths on", 1)
         self.master_volume = Property("Master volume", 1)
-        self.aquarium_lights_on = Property("Aquarium lights on", 0)
-        self.light_strip_on = Property("Light strip on", 1)
         self.conveyor_on = Property("Conveyor on", 0)
         self.fans_on = Property("Fans on", 0)
         self.repair_table_on = Property("Repair table on", 0)
         self.elevator_lights_on = Property("Elevator lights on", 1)
-        self.door_lights_on = Property("Door lights on", 1)
-        self.top_lights_floor_1_on = Property("Top lights floor 1 on", 1)
         self.jungle_on = Property("Jungle on", 0)
-        self.top_lights_jungle_on = Property("Jungle on", 0)
 
-        self.door_lights_color = Property("Door lights color RGB", rgb(20, 30, 60))
-        self.floor_lights_color = Property("Floor lights color RGB", rgb(10, 60, 50))
-        self.top_lights_floor_1_color = Property("Top lights floor 1 color RGB", rgb(60, 50, 20))
+        self.light_strip_on = Property("Light strip on", 1)
+
+        self.top_lights_jungle_on = Property("Jungle on", 0)
         self.top_lights_jungle_color = Property("Top lights jungle color RGB", rgb(60, 50, 20))
 
+        self.door_lights_on = Property("Door lights on", 1)
+        self.door_lights_color = Property("Door lights color RGB", rgb(20, 30, 60))
+
+        self.floor_lights_color = Property("Floor lights color RGB", rgb(10, 60, 50))
+
+        self.top_lights_floor_1_on = Property("Top lights floor 1 on", 1)
+        self.top_lights_floor_1_color = Property("Top lights floor 1 color RGB", rgb(60, 50, 20))
+
+        self.aquarium_lights_on = Property("Aquarium lights on", 0)
         self.aquarium_color = Property("Aquarium color", (0, 0.85, 1))
         self.aquarium_hue_drift = Property("Aquarium hue drift", 0.16)
 
         self.reactor_door_open = Property("Reactor door open", 0)
         self.reactor_lights_on = Property("Reactor lights on", 0)
+
         self.reactor_fan_lights_on = Property("Reactor fan lights on", 0)
         self.reactor_fan_lights_color = Property("Reactor fan lights color RGB", rgb(255, 0, 0))
 
         self.laboratory_on = Property("Laboratory on", 0)
+
+        self.laboratory_top_lights_on = Property("Laboratory top lights on", 0)
+        self.laboratory_top_lights_color = Property("Laboratory top lights color RGB", rgb(120, 100, 40))
+
+        self.laboratory_stalker_lights_on = Property("Laboratory stalker lights on", 0)
+        self.laboratory_stalker_lights_color = Property("Laboratory stalker lights color RGB", rgb(50, 170, 85))
+
+        self.laboratory_tentacle_lights_on = Property("Laboratory tentacle plant lights on", 0)
+        self.laboratory_tentacle_lights_color = Property("Laboratory tentacle plant lights color RGB", rgb(255, 0, 0))
+
 
 class Property:
     def __init__(self, name="unnamed property", initial_value=None):
@@ -55,5 +70,10 @@ class Property:
             self._before_first_set = False
             self._on_value_change()
 
+
+class LightProperties:
+    def __init__(self, name="unnamed lights", color=rgb(255, 255, 255)):
+        self.on = Property(name + " lights on", 0)
+        self.color = Property(name + " color", color)
 
 DEFAULT_ECOTRON_PROPERTIES = EcotronProperties()

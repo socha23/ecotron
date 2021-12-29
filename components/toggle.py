@@ -11,6 +11,7 @@ class Toggle(TickAware):
         self.on_on = lambda: None
         self.on_off = lambda: None
         self._last_tick_value = None
+        self._properties = []
 
     def value(self):
         return self._pin.value
@@ -30,16 +31,15 @@ class Toggle(TickAware):
         self._last_tick_value = self.value()
 
     def _on_on(self):
-        if self.on_on != None:
-            self.on_on()
+        for p in self._properties:
+            p.set_value(1)
 
     def _on_off(self):
-        if self.on_off != None:
-            self.on_off()
+        for p in self._properties:
+            p.set_value(0)
 
-    def bind_property(self, property):
-        self.on_on = lambda: property.set_value(1)
-        self.on_off = lambda: property.set_value(0)
+    def bind_property(self, *properties):
+        self._properties = properties
 
 class ToggleBoard:
     def __init__(self, toggles):

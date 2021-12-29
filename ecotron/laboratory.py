@@ -1,9 +1,12 @@
 from director import Script, script_with_async_step, script_with_sleep, script_with_step
+from ecotron.lights import Lights
+from ecotron.properties import EcotronProperties
 from speech import SpeechLines, say
 from .widget import MultiWidget, PausingActor, Widget
 import random
 from value_source import Constant, Sine, AlwaysOff
 import ecotron.siren
+from ecotron.properties import DEFAULT_ECOTRON_PROPERTIES
 
 ANGLE_WELDING_MIN = 120
 ANGLE_WELDING_MAX = 180
@@ -240,12 +243,31 @@ class Alarm(Widget):
 
 class Laboratory(MultiWidget):
 
-    def __init__(self, stretch_servo, rotate_servo, uprighter_servo, chair_servo, stalk_servo, siren_led):
+    def __init__(self,
+        stretch_servo,
+        rotate_servo,
+        uprighter_servo,
+        chair_servo,
+        stalk_servo,
+        siren_led,
+        top_light_pixels,
+        stalker_light_pixels,
+        tentacle_light_pixels,
+        properties=DEFAULT_ECOTRON_PROPERTIES
+        ):
         self._tentacle_plant = TentaclePlant(self, stretch_servo, rotate_servo, uprighter_servo)
         self._stalk_plant = StalkPlant(self, stalk_servo)
         self._laborant = Laborant(self, chair_servo)
         self._alarm = Alarm(siren_led)
+
+        self._top_lights = Lights(top_light_pixels, properties.laboratory_top_lights_color)
+        self._top_lights.bind_to_property(properties.laboratory_top_lights_on)
+        self._stalker_lights = Lights(stalker_light_pixels, properties.laboratory_stalker_lights_color)
+        self._stalker_lights.bind_to_property(properties.laboratory_stalker_lights_on)
+        self._tentacle_lights = Lights(tentacle_light_pixels, properties.laboratory_tentacle_lights_color)
+        self._tentacle_lights.bind_to_property(properties.laboratory_tentacle_lights_on)
         self._state = STATE_PEACE
+        # TODO pass lights as well when not on own
         MultiWidget.__init__(self, self._tentacle_plant, self._stalk_plant, self._laborant, self._alarm)
 
     def toggle_attack(self):

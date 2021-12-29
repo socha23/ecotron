@@ -10,11 +10,11 @@ import time
 from value_source import RGB
 #from effects.electricity import zap
 
-neopixels = NeopixelStrip(board.D21, 117)
+neopixels = NeopixelStrip(board.D21, 137)
 
-np = NeopixelSegment(neopixels, 96, 1)
+np = NeopixelSegment(neopixels, 106, 8)
+np.source = RGB(255, 255, 255)
 
-np.source = RGB(255, 0, 0)
 DEFAULT_CONTROLLER.on = True
 print("Boom")
 input()
@@ -22,3 +22,4 @@ input()
 
 np.source = AlwaysOff()
 time.sleep(1)
+
