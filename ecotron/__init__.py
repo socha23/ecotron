@@ -1,9 +1,8 @@
-from ecotron.reactor import Reactor, ReactorDoor, ReactorFanLights, ReactorWarningLights
+from ecotron.reactor import Reactor, ReactorDoor, ReactorWarningLights
 from ecotron.color_controller import DEFAULT_COLOR_CONTROLLER
-from ecotron.laboratory import Laboratory, TentaclePlant
+from ecotron.laboratory import Laboratory
 from ecotron.xy_controller import DEFAULT_XY_CONTROLLER
 from ecotron.aquarium import Aquarium
-from value_source import RGB
 from ecotron.stairsdude import Stairsdude
 from ecotron.spiderbro import Spiderbro
 from ecotron.widget import MultiWidget
@@ -18,7 +17,7 @@ import logging
 
 from adafruit_mcp3xxx.mcp3008 import P1
 
-from director import DEFAULT_DIRECTOR, Director
+from director import DEFAULT_DIRECTOR
 from ecotron.conveyor import Conveyor, ConveyorControls
 from ecotron.conveyor_receiver import ConveyorReceiver
 from ecotron.hyperscaner import Hyperscanner
@@ -28,7 +27,7 @@ from ecotron.repair_table import RepairTable
 from ecotron.bebop import Bebop
 from ecotron.fans import Fans
 from ecotron.airlock import Airlock
-from ecotron.properties import DEFAULT_ECOTRON_PROPERTIES, EcotronProperties
+from ecotron.properties import DEFAULT_ECOTRON_PROPERTIES
 from components.toggle import Toggle, ToggleBoard
 from components.encoder import Encoder
 from components.servo import Servo
@@ -147,24 +146,19 @@ class EcotronBase:
             self.aquarium = Aquarium([np_aqua_0, np_aqua_1, np_aqua_2, np_aqua_3])
             self.aquarium.bind_to_property(properties.aquarium_lights_on)
 
-            self.top_lights_jungle = Lights(np_tl_jungle, properties.top_lights_jungle_color, color_controller=color_controller)
-            self.top_lights_jungle.bind_to_property(properties.top_lights_jungle_on)
-
-            self.door_lights = Lights(NeopixelMultiSegment(np_door), properties.door_lights_color, color_controller=color_controller)
-            self.door_lights.bind_to_property(properties.door_lights_on)
+            self.top_lights_jungle = Lights(np_tl_jungle, properties.top_lights_jungle)
+            self.door_lights = Lights(NeopixelMultiSegment(np_door), properties.door_lights)
 
             self.floor_lights = floor_lights(
                 NeopixelMultiSegment(np_fl_1_1, FakeNeopixels(2), np_fl_1_2, FakeNeopixels(2), np_fl_1_3,
                 np_fl_1_4,
                 np_fl_2_1,
                 ),
-                properties.floor_lights_color, color_controller=color_controller
+                properties.light_strip.color, color_controller=color_controller
                 )
             self.floor_lights.bind_to_property(properties.light_strip_on)
 
             self.top_lights_floor_1 = Lights(np_tl_1, properties.top_lights_floor_1)
-            #self.top_lights_floor_1 = Lights(np_tl_1, properties.top_lights_floor_1_color, color_controller=color_controller)
-            #self.top_lights_floor_1.bind_to_property(properties.top_lights_floor_1_on)
 
             self.elevator = Elevator(director, controls.elevator_controls, hub.device("A"), np_elevator, properties)
 
@@ -225,8 +219,7 @@ class EcotronBase:
                 PWMLED(servo_kit_3._pca.channels[9]),
             )
             self.reactor_lights.bind_to_property(properties.reactor_lights_on)
-            self.reactor_fan_lights = ReactorFanLights(np_reactor_fans)
-            self.reactor_fan_lights.bind_to_property(properties.reactor_fan_lights_on)
+            self.reactor_fan_lights = Lights(np_reactor_fans, properties.reactor_fan_lights)
             self.reactor = Reactor(np_reactor_main)
 
             self.laboratory = Laboratory(
@@ -266,18 +259,18 @@ def bind_controls_to_properties(controls, properties):
 
     light_toggles = controls.light_toggle_board.toggles
 
-    light_toggles[0].bind_property(properties.top_lights_jungle_on)
+    light_toggles[0].bind_property(properties.top_lights_jungle.on)
     light_toggles[1].bind_property(
-        properties.top_lights_floor_1_on,
-        properties.door_lights_on
+        properties.top_lights_floor_1.on,
+        properties.door_lights.on
         )
-    light_toggles[2].bind_property(properties.laboratory_stalker_lights_on)
-    light_toggles[3].bind_property(properties.laboratory_tentacle_lights_on)
-    light_toggles[4].bind_property(properties.laboratory_top_lights_on)
+    light_toggles[2].bind_property(properties.laboratory_stalker_lights.on)
+    light_toggles[3].bind_property(properties.laboratory_tentacle_lights.on)
+    light_toggles[4].bind_property(properties.laboratory_top_lights.on)
 
-    light_toggles[5].bind_property(properties.light_strip_on)
+    light_toggles[5].bind_property(properties.light_strip.on)
     light_toggles[7].bind_property(properties.aquarium_lights_on)
-    light_toggles[8].bind_property(properties.reactor_fan_lights_on)
+    light_toggles[8].bind_property(properties.reactor_fan_lights.on)
     light_toggles[9].bind_property(properties.reactor_lights_on)
 
 def bind_controls_to_actions(controls, base):

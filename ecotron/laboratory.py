@@ -260,12 +260,9 @@ class Laboratory(MultiWidget):
         self._laborant = Laborant(self, chair_servo)
         self._alarm = Alarm(siren_led)
 
-        self._top_lights = Lights(top_light_pixels, properties.laboratory_top_lights_color)
-        self._top_lights.bind_to_property(properties.laboratory_top_lights_on)
-        self._stalker_lights = Lights(stalker_light_pixels, properties.laboratory_stalker_lights_color)
-        self._stalker_lights.bind_to_property(properties.laboratory_stalker_lights_on)
-        self._tentacle_lights = Lights(tentacle_light_pixels, properties.laboratory_tentacle_lights_color)
-        self._tentacle_lights.bind_to_property(properties.laboratory_tentacle_lights_on)
+        self._top_lights = Lights(top_light_pixels, properties.laboratory_top_lights)
+        self._stalker_lights = Lights(stalker_light_pixels, properties.laboratory_stalker_lights)
+        self._tentacle_lights = Lights(tentacle_light_pixels, properties.laboratory_tentacle_lights)
         self._state = STATE_PEACE
         # TODO pass lights as well when not on own
         MultiWidget.__init__(self, self._tentacle_plant, self._stalk_plant, self._laborant, self._alarm)

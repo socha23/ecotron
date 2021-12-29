@@ -45,11 +45,6 @@ class ReactorWarningLights(Widget):
         self._led_2.source = AlwaysOff()
 
 
-def ReactorFanLights(lights):
-    color = DEFAULT_ECOTRON_PROPERTIES.reactor_fan_lights_color
-    return Lights(lights, color, color_property=color)
-
-
 CLIP_BOOM = Clip("./resources/explosion_large_1.ogg", stereo=[0, 1])
 
 

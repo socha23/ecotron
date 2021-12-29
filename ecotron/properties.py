@@ -14,18 +14,15 @@ class EcotronProperties:
         self.elevator_lights_on = Property("Elevator lights on", 1)
         self.jungle_on = Property("Jungle on", 0)
 
+        self.light_strip = LightProperties("Floor lights", rgb(10, 60, 50))
+
         self.light_strip_on = Property("Light strip on", 1)
         self.floor_lights_color = Property("Floor lights color RGB", rgb(10, 60, 50))
 
-        self.top_lights_jungle_on = Property("Jungle on", 0)
-        self.top_lights_jungle_color = Property("Top lights jungle color RGB", rgb(60, 50, 20))
+        self.jungle_on = Property("Jungle on", 0)
+        self.top_lights_jungle = LightProperties("Top lights jungle", rgb(60, 50, 20))
 
-        self.door_lights_on = Property("Door lights on", 1)
-        self.door_lights_color = Property("Door lights color RGB", rgb(20, 30, 60))
-
-
-        self.top_lights_floor_1_on = Property("Top lights floor 1 on", 1)
-        self.top_lights_floor_1_color = Property("Top lights floor 1 color RGB", rgb(60, 50, 20))
+        self.door_lights = LightProperties("Door lights", rgb(20, 30, 60))
 
         self.top_lights_floor_1 = LightProperties("Top lights floor 1", rgb(60, 50, 20))
 
@@ -34,21 +31,13 @@ class EcotronProperties:
         self.aquarium_hue_drift = Property("Aquarium hue drift", 0.16)
 
         self.reactor_door_open = Property("Reactor door open", 0)
-        self.reactor_lights_on = Property("Reactor lights on", 0)
-
-        self.reactor_fan_lights_on = Property("Reactor fan lights on", 0)
-        self.reactor_fan_lights_color = Property("Reactor fan lights color RGB", rgb(255, 0, 0))
+        self.reactor_lights_on = Property("Reactor warning lights on", 0)
+        self.reactor_fan_lights = LightProperties("Reactor fan lights", rgb(255, 0, 0))
 
         self.laboratory_on = Property("Laboratory on", 0)
-
-        self.laboratory_top_lights_on = Property("Laboratory top lights on", 0)
-        self.laboratory_top_lights_color = Property("Laboratory top lights color RGB", rgb(120, 100, 40))
-
-        self.laboratory_stalker_lights_on = Property("Laboratory stalker lights on", 0)
-        self.laboratory_stalker_lights_color = Property("Laboratory stalker lights color RGB", rgb(50, 170, 85))
-
-        self.laboratory_tentacle_lights_on = Property("Laboratory tentacle plant lights on", 0)
-        self.laboratory_tentacle_lights_color = Property("Laboratory tentacle plant lights color RGB", rgb(255, 0, 0))
+        self.laboratory_top_lights = LightProperties("Laboratory top lights", rgb(120, 100, 40))
+        self.laboratory_stalker_lights = LightProperties("Laboratory stalker lights", rgb(50, 170, 85))
+        self.laboratory_tentacle_lights = LightProperties("Laboratory tentacle plant lights", rgb(255, 0, 0))
 
 
 class Property:
