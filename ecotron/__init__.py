@@ -233,13 +233,6 @@ class EcotronBase:
             self.laboratory.bind_to_property(properties.laboratory_on)
 
 
-def bind_elevator(elevator, elevator_controls):
-        for floor_idx in range(len(Elevator.FLOOR_HEIGHTS)):
-            elevator_controls.floor_buttons[floor_idx].on_press = lambda floor_idx=floor_idx: elevator.go_to_floor(floor_idx)
-        elevator_controls.button_red.on_press = elevator.go_floor_up
-        elevator_controls.button_green.on_press = elevator.go_floor_down
-
-
 def bind_controls_to_properties(controls, properties):
 
     controls.conveyor_controls.toggle.bind_property(properties.master_volume, properties.control_panel_ligths_on)
@@ -258,8 +251,9 @@ def bind_controls_to_properties(controls, properties):
 
     light_toggles[0].bind_property(properties.top_lights_jungle.on)
     light_toggles[1].bind_property(
+        # order is important, last one will take color controller
+        properties.door_lights.on,
         properties.top_lights_floor_1.on,
-        properties.door_lights.on
         )
     light_toggles[2].bind_property(properties.laboratory_stalker_lights.on)
     light_toggles[3].bind_property(properties.laboratory_tentacle_lights.on)
@@ -270,8 +264,14 @@ def bind_controls_to_properties(controls, properties):
     light_toggles[8].bind_property(properties.reactor_fan_lights.on)
     light_toggles[9].bind_property(properties.reactor_lights_on)
 
+
 def bind_controls_to_actions(controls, base):
-    bind_elevator(base.elevator, controls.elevator_controls)
+
+    for floor_idx in range(len(Elevator.FLOOR_HEIGHTS)):
+            controls.elevator_controls.floor_buttons[floor_idx].on_press = lambda floor_idx=floor_idx: base.elevator.go_to_floor(floor_idx)
+
+    controls.elevator_controls.button_red.on_press = DEFAULT_ECOTRON_PROPERTIES.print_properties
+    #controls.elevator_controls.button_green.on_press = base.elevator.go_floor_down
 
     controls.conveyor_controls.button_blue.on_press = base.airlock.run_cycle_from_outside
     controls.conveyor_controls.button_yellow.on_press = base.laboratory.toggle_attack
