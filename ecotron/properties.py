@@ -37,14 +37,15 @@ class EcotronProperties:
 
         self.laboratory_on = Property("Laboratory on", 0)
 
-self.light_strip = LightProperties("Floor lights", hsv(0.467, 0.833, 0.234), mode = LightMode.PLASMA)
-self.top_lights_jungle = LightProperties("Top lights jungle", hsv(0.125, 0.667, 0.234))
-self.door_lights = LightProperties("Door lights", hsv(0.625, 0.667, 0.234))
-self.top_lights_floor_1 = LightProperties("Top lights floor 1", hsv(0.125, 0.667, 0.234))
-self.reactor_fan_lights = LightProperties("Reactor fan lights", hsv(0.0, 1.0, 0.996))
-self.laboratory_top_lights = LightProperties("Laboratory top lights", hsv(0.105, 0.767, 0.469))
-self.laboratory_stalker_lights = LightProperties("Laboratory stalker lights", hsv(0.922, 0.8, 0.7), mode = LightMode.PLASMA)
-self.laboratory_tentacle_lights = LightProperties("Laboratory tentacle plant lights", hsv(0.0, 0.9, 1), mode = LightMode.PLASMA)
+        self.light_strip = LightProperties("Floor lights", hsv(0.467, 0.833, 0.234), mode = LightMode.PLASMA)
+        self.top_lights_jungle = LightProperties("Top lights jungle", hsv(0.125, 0.667, 0.234))
+        self.door_lights = LightProperties("Door lights", hsv(0.625, 0.667, 0.234))
+        self.top_lights_floor_1 = LightProperties("Top lights floor 1", hsv(0.125, 0.667, 0.234))
+        self.reactor_fan_lights = LightProperties("Reactor fan lights", hsv(0.0, 1.0, 0.996))
+        self.laboratory_top_lights = LightProperties("Laboratory top lights", hsv(0.105, 0.767, 0.469))
+        self.laboratory_stalker_lights = LightProperties("Laboratory stalker lights", hsv(0.922, 0.8, 0.7), mode = LightMode.PLASMA)
+        self.laboratory_tentacle_lights = LightProperties("Laboratory tentacle plant lights", hsv(0.0, 0.9, 1), mode = LightMode.PLASMA)
+
     def print_properties(self):
         print()
         for name, val in self.__dict__.items():
