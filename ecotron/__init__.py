@@ -271,10 +271,12 @@ def bind_controls_to_actions(controls, base):
             controls.elevator_controls.floor_buttons[floor_idx].on_press = lambda floor_idx=floor_idx: base.elevator.go_to_floor(floor_idx)
 
     controls.elevator_controls.button_red.on_press = DEFAULT_ECOTRON_PROPERTIES.print_properties
-    #controls.elevator_controls.button_green.on_press = base.elevator.go_floor_down
+   # controls.elevator_controls.button_green.on_press = base.laboratory.blitz_tentacle
 
     controls.conveyor_controls.button_blue.on_press = base.airlock.run_cycle_from_outside
-    controls.conveyor_controls.button_yellow.on_press = base.laboratory.toggle_attack
+
+    controls.conveyor_controls.button_yellow.on_press = base.laboratory.button_press
+    controls.conveyor_controls.button_yellow.on_release = base.laboratory.button_release
 
     controls.conveyor_controls.button_green.on_press = base.stairsdude.random_rotation
     controls.conveyor_controls.button_red.on_press = base.reactor.boom

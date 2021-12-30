@@ -7,6 +7,7 @@ import time
 from value_source import ValueSource
 from tick_aware import TickAware
 
+pygame.mixer.pre_init(22050, -16, 2, 2048)
 pygame.init()
 mixer_settings = pygame.mixer.get_init()
 
@@ -38,12 +39,18 @@ class Clip(TickAware):
   def loop(self, fadein=0):
       return self.play(loops=-1, fadein=fadein)
 
-  def play(self, on_complete=lambda:None, loops=0, fadein=0):
+  def play(self, on_complete=lambda:None, loops=0, fadein=0, volume=None, stereo=None):
     global _master_volume
-    self._sound.set_volume(_master_volume)
+
+    if volume == None:
+        volume = self._volume
+    volume *= _master_volume
+    if stereo == None:
+        stereo = self._stereo
+
     self._channel = self._sound.play(loops=loops, fade_ms=int(fadein * 1000))
     if self._channel != None:
-      self.update_channel_volume()
+      self.update_channel_volume(volume, stereo)
       self._on_complete = on_complete
       self._playing = True
       active_clips.add(self)
@@ -58,19 +65,10 @@ class Clip(TickAware):
   def stop(self):
     self._sound.stop()
 
-  def update_channel_volume(self):
-      left, right = self._stereo
+  def update_channel_volume(self, volume, stereo):
+      left, right = stereo
       if self._channel != None:
-        self._channel.set_volume(left * self.volume * _master_volume, right * self.volume * _master_volume)
-
-  @property
-  def volume(self):
-    return self._volume
-
-  @volume.setter
-  def volume(self, volume):
-    self._volume = volume
-    self._sound.set_volume(volume)
+        self._channel.set_volume(left * volume, right * volume)
 
   def _init_intensity(self):
     INTENSITY_SAMPLE_RATE = 100 # Hz
@@ -114,9 +112,11 @@ class Intensity:
         frame_samples = samples_mono[i * samples_per_frame : (i + 1) * samples_per_frame]
         self._intensity_samples.append(np.max(np.abs(frame_samples)) / SAMPLE_MAX_VAL)
 
+  def is_finished_at(self, time_s):
+    idx = int(time_s * self._sample_rate)
+    return idx >= len(self._intensity_samples)
 
   def at(self, time_s):
-
     idx = int(time_s * self._sample_rate)
     if idx >= len(self._intensity_samples):
       return 0
@@ -125,8 +125,7 @@ class Intensity:
 
 
 class IntensityValueSource(ValueSource):
-  #DELAY = 0.48
-  DELAY = 0.4
+  DELAY = 0
 
   def __init__(self, intensity):
     ValueSource.__init__(self)
@@ -140,7 +139,8 @@ class IntensityValueSource(ValueSource):
       else:
           return self._intensity.at(t - IntensityValueSource.DELAY)
 
-
+  def is_finished(self):
+      return self._intensity.is_finished_at(self.current_time() - self._start_time)
 
 
 
@@ -166,5 +166,5 @@ def wait_until_end():
 def set_master_volume(volume):
   global _master_volume
   _master_volume = volume
-  for clip in active_clips:
-    clip.update_channel_volume()
+  #for clip in active_clips:
+  #  clip.update_channel_volume()

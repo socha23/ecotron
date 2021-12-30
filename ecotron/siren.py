@@ -4,12 +4,12 @@ STATE_OFF = 0
 STATE_WARNING = 1
 STATE_DANGER = 2
 
-CLIP_WARNING = Clip("./resources/siren_warning.ogg")
+CLIP_WARNING = Clip("./resources/siren_warning.ogg", volume=0.2)
 
 WARNING_CLIP_LENGTH = 0.741 # two pulses
 WARNING_CLIP_PULSE_LENGTH = WARNING_CLIP_LENGTH / 2
 
-CLIP_DANGER = Clip("./resources/siren_danger.ogg")
+CLIP_DANGER = Clip("./resources/siren_danger.ogg", volume=0.2)
 
 DANGER_CLIP_LENGTH = 2.892 # two pulses
 DANGER_CLIP_PULSE_LENGTH = DANGER_CLIP_LENGTH / 2

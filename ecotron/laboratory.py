@@ -1,10 +1,11 @@
 from director import Script, script_with_async_step, script_with_sleep, script_with_step
 from ecotron.lights import Lights
-from ecotron.properties import EcotronProperties
+from ecotron.properties import EcotronProperties, LightMode
+from effects.electricity import single_shock_now
 from speech import SpeechLines, say
 from .widget import MultiWidget, PausingActor, Widget
 import random
-from value_source import Constant, Sine, AlwaysOff
+from value_source import Constant, Sine, AlwaysOff, ValueSource
 import ecotron.siren
 from ecotron.properties import DEFAULT_ECOTRON_PROPERTIES
 
@@ -20,7 +21,7 @@ SERVO_MOVE_SPEED = 0.3
 STATE_PEACE = 0
 STATE_AGITATED = 1
 STATE_ATTACK = 2
-
+STATE_ZAPPING = 3
 
 class TentacleActor(PausingActor):
     def __init__(self, laboratory, servo, state_to_angle_range, state_to_speed_range, state_to_pause_range, initial, min_move_angle = 0):
@@ -36,8 +37,8 @@ class TentacleActor(PausingActor):
     def do_action(self, callback):
         cur_angle = self._servo.angle
         state = self._laboratory._state
-        a_f, a_t = self._state_to_angle_range[state]
-        s_f, s_t = self._state_to_speed_range[state]
+        a_f, a_t = self._state_to_angle_range[state] if state in self._state_to_angle_range else self._state_to_angle_range[STATE_PEACE]
+        s_f, s_t = self._state_to_speed_range[state] if state in self._state_to_speed_range else self._state_to_speed_range[STATE_PEACE]
         new_angle = random.uniform(a_f, a_t)
         while abs(new_angle - cur_angle) < self._min_move_angle:
             new_angle = random.uniform(a_f, a_t)
@@ -47,7 +48,7 @@ class TentacleActor(PausingActor):
         )))
 
     def _get_idle_time(self):
-        p_f, p_t = self._state_to_pause_range[self._laboratory._state]
+        p_f, p_t = self._state_to_pause_range[self._laboratory._state] if self._laboratory._state in self._state_to_pause_range else self._state_to_pause_range[STATE_PEACE]
         return random.uniform(p_f, p_t)
 
     def move_to(self, angle, speed):
@@ -57,7 +58,6 @@ class TentacleActor(PausingActor):
         return lambda c: self._servo.move_to(angle, speed, c)
 
     def when_turn_off(self):
-        print("plant off")
         PausingActor.when_turn_off(self)
 
 
@@ -70,16 +70,19 @@ class TentaclePlant(MultiWidget):
             state_to_angle_range= {
                 STATE_PEACE: (100, 140),
                 STATE_AGITATED: (100, 140),
-                STATE_ATTACK: (0, 120)
+                STATE_ATTACK: (0, 120),
+                STATE_ZAPPING: (120, 140)
             },
             state_to_speed_range= {
                 STATE_PEACE: (0.01, 0.1),
                 STATE_AGITATED: (0.1, 3),
                 STATE_ATTACK: (0.1, 10),
+                STATE_ZAPPING: (0.1, 10),
             },
             state_to_pause_range= {
                 STATE_PEACE: (0.1, 0.2),
                 STATE_AGITATED: (0.1, 0.2),
+                STATE_ZAPPING: (0.1, 0.2),
                 STATE_ATTACK: (0.1, 0.2),
             },
             initial = 140
@@ -88,17 +91,20 @@ class TentaclePlant(MultiWidget):
             state_to_angle_range= {
                 STATE_PEACE: (80, 120),
                 STATE_AGITATED: (80, 120),
-                STATE_ATTACK: (60, 140)
+                STATE_ATTACK: (60, 140),
+                STATE_ZAPPING: (80, 120),
             },
             state_to_speed_range= {
                 STATE_PEACE: (0.01, 0.1),
                 STATE_AGITATED: (0.1, 3),
                 STATE_ATTACK: (0.1, 10),
+                STATE_ZAPPING: (3, 10),
             },
             state_to_pause_range= {
                 STATE_PEACE: (0.1, 0.2),
                 STATE_AGITATED: (0.1, 0.2),
                 STATE_ATTACK: (0.1, 0.2),
+                STATE_ZAPPING: (0.05, 0.1),
             },
             initial=110
         )
@@ -114,6 +120,7 @@ class TentaclePlant(MultiWidget):
 
     def _upright(self):
         s = Script()
+        s.add_sleep(1)
         s.add_async_step(lambda c: self._uprighter_servo.move_to(160, 0.5, c))
         s.add_sleep(1)
         s.add_async_step(lambda c: self._uprighter_servo.move_to(20, 0.5, c))
@@ -140,18 +147,15 @@ class StalkPlant(MultiWidget):
         self._actor = TentacleActor(laboratory, servo,
             state_to_angle_range= {
                 STATE_PEACE: (30, 130),
-                STATE_AGITATED: (30, 130),
-                STATE_ATTACK: (30, 130)
             },
             state_to_speed_range= {
                 STATE_PEACE: (0.05, 0.1),
                 STATE_AGITATED: (0.1, 0.2),
                 STATE_ATTACK: (0.1, 0.3),
+                STATE_ZAPPING: (0.1, 0.3),
             },
             state_to_pause_range= {
                 STATE_PEACE: (0.1, 0.2),
-                STATE_AGITATED: (0.1, 0.2),
-                STATE_ATTACK: (0.1, 0.2),
             },
             initial = 80,
             min_move_angle = 30
@@ -175,17 +179,20 @@ class Laborant(MultiWidget):
             state_to_angle_range= {
                 STATE_PEACE: (140, 180),
                 STATE_AGITATED: (100, 130),
-                STATE_ATTACK: (20, 100)
+                STATE_ATTACK: (20, 100),
+                STATE_ZAPPING: (20, 100),
             },
             state_to_speed_range= {
                 STATE_PEACE: (0.1, 0.1),
                 STATE_AGITATED: (0.1, 0.3),
                 STATE_ATTACK: (0.1, 0.5),
+                STATE_ZAPPING: (0.1, 0.5),
             },
             state_to_pause_range= {
                 STATE_PEACE: (1, 4),
                 STATE_AGITATED: (0.5, 3),
                 STATE_ATTACK: (0.5, 2),
+                STATE_ZAPPING: (0.5, 2),
             },
             initial=180
         )
@@ -240,6 +247,33 @@ class Alarm(Widget):
         ecotron.siren.DEFAULT.off()
         self._led.source = self._led.source = AlwaysOff()
 
+class Shocker(ValueSource):
+    def __init__(self, lights, volume=1, stereo=[1, 1]):
+        self.running = False
+        self._lights = lights
+        self._volume = volume
+        self._stereo = stereo
+        self._partials = [AlwaysOff() for _ in range(lights.size())]
+        self._lights.add_overlay(self)
+
+    def start(self):
+        self.running = True
+        for i in range(self._lights.size()):
+            self._spawn_shock(i)
+
+    def stop(self):
+        self.running = False
+
+    def value(self):
+        return [p.value() for p in self._partials]
+
+
+    def _spawn_shock(self, i):
+        if self.running:
+            self._partials[i] = single_shock_now(self._volume, self._stereo, lambda: self._spawn_shock(i))
+        else:
+            self._partials[i] = AlwaysOff()
+
 
 class Laboratory(MultiWidget):
 
@@ -264,41 +298,90 @@ class Laboratory(MultiWidget):
         self._stalker_lights = Lights(stalker_light_pixels, properties.laboratory_stalker_lights)
         self._tentacle_lights = Lights(tentacle_light_pixels, properties.laboratory_tentacle_lights)
         self._state = STATE_PEACE
+        self._during_transition = False
+        self._shocker = Shocker(self._tentacle_lights)
+
         # TODO pass lights as well when not on own
         MultiWidget.__init__(self, self._tentacle_plant, self._stalk_plant, self._laborant, self._alarm)
 
-    def toggle_attack(self):
-        if not self._on:
+    def _enter_transition(self):
+        self._during_transition = True
+
+    def _exit_transition(self):
+        self._during_transition = False
+
+    def enter_agitated(self):
+        print("AGITATED")
+        self._enter_transition()
+        self._state = STATE_AGITATED
+
+        props = DEFAULT_ECOTRON_PROPERTIES.laboratory_tentacle_lights.copy()
+        props.mode.set_value(LightMode.PLASMA)
+        props.param.set_value(0.9)
+        self._tentacle_lights.set_properties(props)
+
+        (Script()
+            .add_step(lambda: say(SpeechLines.TENTACLE_PLANT_AGITATED))
+            .add_sleep(2)
+            .add_step(self._alarm.warning)
+            .add_sleep(1)
+            .add_step(self._laborant.look_at_alarm)
+            .add_sleep(0.5)
+            .add_step(self._laborant.look_at_tentacle_plant)
+            .add_step(self._exit_transition)
+        ).execute()
+
+    def enter_attack(self):
+        print("ATTACK")
+        self._enter_transition()
+        self._state = STATE_ATTACK
+        self._tentacle_plant.breakout()
+        (Script()
+            .add_sleep(0.5)
+            .add_step(self._alarm.danger)
+            .add_step(lambda: say(SpeechLines.TENTACLE_PLANT_BREAKOUT))
+            .add_step(self._laborant.look_at_breakout)
+            .add_step(self._exit_transition)
+        ).execute()
+
+    def enter_zapping(self):
+        print("ZAPPING")
+        self._state = STATE_ZAPPING
+        self._shocker.start()
+
+    def enter_peace(self):
+        self._shocker.stop()
+        self._tentacle_lights.set_properties(DEFAULT_ECOTRON_PROPERTIES.laboratory_tentacle_lights)
+        print("PEACE")
+        self._enter_transition()
+        self._state = STATE_PEACE
+        (Script()
+            .add_sleep(0.5)
+            .add_step(self._tentacle_plant.peace)
+            .add_sleep(2)
+            .add_step(self._alarm.off)
+            .add_step(lambda: say(SpeechLines.TENTACLE_PLANT_PEACE))
+            .add_step(self._exit_transition)
+        ).execute()
+
+
+    def button_release(self):
+        if self._during_transition:
+            return
+        if self._state == STATE_ZAPPING:
+            self.enter_peace()
+
+    def button_press(self):
+        if not self._on or self._during_transition:
             return
         if self._state == STATE_PEACE:
-            print("AGITATED")
-            self._state = STATE_AGITATED
-            (Script()
-                .add_step(lambda: say(SpeechLines.TENTACLE_PLANT_AGITATED))
-                .add_sleep(2)
-                .add_step(self._alarm.warning)
-                .add_sleep(1)
-                .add_step(self._laborant.look_at_alarm)
-                .add_sleep(0.5)
-                .add_step(self._laborant.look_at_tentacle_plant)
-            ).execute()
+            self.enter_agitated()
         elif self._state == STATE_AGITATED:
-            print("ATTACK")
-            self._state = STATE_ATTACK
-            self._tentacle_plant.breakout()
-            (Script()
-                .add_sleep(0.5)
-                .add_step(self._alarm.danger)
-                .add_step(lambda: say(SpeechLines.TENTACLE_PLANT_BREAKOUT))
-                .add_step(self._laborant.look_at_breakout)
-
-            ).execute()
+            self.enter_attack()
+        elif self._state == STATE_ATTACK:
+            self.enter_zapping()
         else:
-            print("PEACE")
-            self._state = STATE_PEACE
-            self._tentacle_plant.peace()
-            say(SpeechLines.TENTACLE_PLANT_PEACE)
-            self._alarm.off()
+            pass
 
 
 

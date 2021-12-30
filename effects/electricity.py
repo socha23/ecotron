@@ -5,13 +5,14 @@ import value_source
 import random
 
 ELECTRICITY_ZAP_CLIPS = [Clip(path) for path in glob.glob("./resources/electric_zap_*.ogg")]
+ELECTRICITY_SHOCK_CLIPS = [Clip(path) for path in glob.glob("./resources/electric_shock_*.ogg")]
 
 class ZapSource(value_source._Composite):
     def __init__(self, max_sources = 4):
         value_source._Composite.__init__(self)
         self._inner_sources = [value_source.AlwaysOff() for _ in range(max_sources)]
 
-    
+
     def set_inner_source(self, idx, source):
         self._inner_sources[idx] = source
 
@@ -31,14 +32,14 @@ def prolonged_zap_script(duration_s, channel, zap_source):
     while time_left > 0:
         clip = random.choice(ELECTRICITY_ZAP_CLIPS)
         s.add_step(lambda clip=clip: _run_zap(clip, channel, zap_source))
-        
+
         if time_left < clip.duration_s():
             s.add_sleep(time_left)
             s.add_step(clip.stop)
         else:
             s.add_sleep(clip.duration_s())
 
-            
+
         time_left -= clip.duration_s()
 
     return s
@@ -54,3 +55,12 @@ def zap_script(neopixels, duration_s=10):
             prolonged_zap_script(duration_s, 2, zap_source)
         )
         .add_step(neopixels.off))
+
+
+def single_shock_now(volume=1, stereo=[1, 1], callback=lambda:None):
+    clip = random.choice(ELECTRICITY_SHOCK_CLIPS)
+    clip.play(volume=volume, stereo=stereo, on_complete=callback)
+    return value_source.Filter(
+        clip.intensity_source(),
+        min=0.7
+    )

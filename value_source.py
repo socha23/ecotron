@@ -156,31 +156,40 @@ class ValueSource(TimeAware):
     def value(self):
         return 1
 
+    def is_finished(self):
+        return False
 
-class Constant:
+
+class Constant(ValueSource):
     def __init__(self, val):
+        ValueSource.__init__(self)
         self._val = val
 
     def value(self):
         return self._val
 
-class Lambda:
+
+class Lambda(ValueSource):
     def __init__(self, s):
+        ValueSource.__init__(self)
         self._s = s
 
     def value(self):
         return self._s()
 
-class RepeatedConstant:
+
+class RepeatedConstant(ValueSource):
     def __init__(self, val, repeats = 1):
+        ValueSource.__init__(self)
         self._val = [val] * repeats
 
     def value(self):
         return self._val
 
 
-class SettableSource:
+class SettableSource(ValueSource):
     def __init__(self, val=0):
+        ValueSource.__init__(self)
         self._value = val
 
     def value(self):
@@ -262,11 +271,14 @@ class Gradient(ValueSource):
         self._time_started = self.current_time()
         self._duration_s = duration_s
 
+    def _phase(self):
+        return (self.current_time() - self._time_started) / self._duration_s
 
     def value(self):
-        phase = (self.current_time() - self._time_started) / self._duration_s
-        return self._definition[phase]
+        return self._definition[self._phase()]
 
+    def is_finished(self):
+        return self._phase() > 1
 
 
 class GradientRandomWalk(ValueSource):
@@ -314,6 +326,12 @@ class _Composite(ValueSource):
     def value(self):
         raise "Not implemented"
 
+    def is_finished(self):
+        r = True
+        for c in self._inner_sources:
+            r = r and c.is_finished()
+        return r
+
 
 class _Decorator(ValueSource):
     def __init__(self, source=AlwaysOn()):
@@ -322,6 +340,49 @@ class _Decorator(ValueSource):
 
     def value(self):
         raise "Not implemented"
+
+    def is_finished(self):
+        return self._inner_source.is_finished()
+
+
+class Filter(_Decorator):
+    def __init__(self, source=AlwaysOn(), min=0, max=1):
+        _Decorator.__init__(self, source)
+        self.min = min
+        self.max = max
+
+    def value(self):
+        inner_val = self._inner_source.value()
+        if self.min <= inner_val and inner_val <= self.max:
+            return 1
+        else:
+            return 0
+
+
+class ValueSourceWithOverlays(_Decorator):
+    def __init__(self, source=AlwaysOn()):
+        _Decorator.__init__(self, source)
+        self._overlays = []
+
+    def set_source(self, source):
+        self._inner_source = source
+
+    def value(self):
+        val = self._inner_source.value()
+        running_overlays = []
+
+        for overlay in self._overlays:
+            if hasattr(overlay.__class__, "is_finished") and overlay.is_finished():
+                pass
+            else:
+                running_overlays.append(overlay)
+                val = ultra_max(val, overlay.value())
+
+        self._overlays = running_overlays
+        return val
+
+    def add_overlay(self, overlay):
+        self._overlays.append(overlay)
 
 
 class Multiply(_Composite):
@@ -333,6 +394,7 @@ class Multiply(_Composite):
         for s in self._inner_sources:
             val = multiply(val, s.value())
         return val
+
 
 class Add(_Composite):
     def __init__(self, *factors, min_value=0, max_value=1):
@@ -346,6 +408,9 @@ class Add(_Composite):
             val = add(val, s.value())
         return clamp(val, self._min_value, self._max_value)
 
+
+
+
 class Max(_Composite):
     def __init__(self, *factors):
         _Composite.__init__(self, *factors)
@@ -356,6 +421,7 @@ class Max(_Composite):
             val = ultra_max(val, s.value())
         return val
 
+
 class Min(_Composite):
     def __init__(self, *factors):
         _Composite.__init__(self, *factors)
@@ -365,6 +431,7 @@ class Min(_Composite):
         for s in self._inner_sources:
             val = ultra_min(val, s.value())
         return val
+
 
 class Concat(_Composite):
     def __init__(self, *factors):
@@ -379,12 +446,14 @@ class Concat(_Composite):
                 val.append(s.value())
         return val
 
+
 class Negative(_Decorator):
     def __init__(self, inner):
         _Decorator.__init__(self, inner)
 
     def value(self):
         return -self._inner_source.value()
+
 
 class TimeConstrained(_Decorator):
     def __init__(self, duration_s=1, source=AlwaysOn()):
@@ -396,6 +465,10 @@ class TimeConstrained(_Decorator):
             return 0
         else:
             return self._inner_source.value()
+
+    def is_finished(self):
+        return self.current_time() > self._cutoff_time
+
 
 class FadeInOut(_Decorator):
     STATE_ON = 1
@@ -438,7 +511,7 @@ class FadeInOut(_Decorator):
                 self._state = FadeInOut.STATE_OFF
                 return 0
 
-
+# legacy, remove after elevator lights refactor
 class FadeInFadeOut(ValueSource):
 
     STATE_ON = 1

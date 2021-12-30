@@ -60,7 +60,7 @@ class BeepLibrary:
         self._logger.info(f"Beeps library {self._name} generated in {time.time() - library_generation_start}")
 
     def random_beep(self):
-        row = choice(self._weighted_beeps) 
+        row = choice(self._weighted_beeps)
         val_idx = int((randrange(len(row)) + randrange(len(row))) / 2) # poor man's gauss
         return row[val_idx]
 
@@ -71,22 +71,21 @@ class BeepSentence:
         self.clip = bs.make_clip(*[b.sound for b in self.beeps])
 
     def play(self, volume=1, on_complete=lambda:None):
-        self.clip.volume = volume
-        self.clip.play(on_complete=on_complete)
+        self.clip.play(on_complete=on_complete, volume=volume)
 
     def stop(self):
         self.clip.stop()
 
     def duration_s(self):
         return sum([b.duration_s for b in self.beeps])
-    
+
     def pitch_and_att(self, time_s):
         for b in self.beeps:
             if time_s < b.duration_s:
                 return (b.pitch, b.envelope[int(time_s * bs.SAMPLE_RATE)])
             time_s -= b.duration_s
         return (0, 0)
-    
+
     def pitch(self, time_s):
         return self.pitch_and_att(time_s)[0]
 

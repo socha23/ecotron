@@ -1,7 +1,7 @@
 from ecotron.color_controller import DEFAULT_COLOR_CONTROLLER
 from director import execute, Script
 from utils import translate
-from value_source import RGB, Concat, GradientDefinition, Max, Sine, ValueSource, repeated_pulse, FadeInOut, Multiply, Constant, Gradient, GradientRandomWalk
+from value_source import RGB, Concat, GradientDefinition, Max, Sine, ValueSource, repeated_pulse, FadeInOut, Multiply, Constant, Gradient, GradientRandomWalk, ValueSourceWithOverlays
 from ecotron.widget import Widget
 from enum import Enum
 from ecotron.properties import LightMode
@@ -39,23 +39,43 @@ class Lights(Widget):
         if self._color_control:
            DEFAULT_COLOR_CONTROLLER.set_current_properties(None)
 
+    def set_properties(self, properties):
+        self._source.set_properties(properties)
+
+    def add_overlay(self, source):
+        self._source.add_overlay(source)
+
+    def size(self):
+        return self._lights.size()
+
 
 class LightPropertiesSource(ValueSource):
     def __init__(self, size, light_properties):
+        ValueSource.__init__(self)
         self._size = size
         self._properties = light_properties
-        self._inner_source = self._create_inner_source()
+        self._inner_source = ValueSourceWithOverlays(source_from_light_properties(self._size, self._properties))
         light_properties.mode.on_value_change = lambda _: self.when_switch_mode()
         light_properties.param.on_value_change = lambda _: self.when_switch_mode()
 
+    def add_overlay(self, source):
+        self._inner_source.add_overlay(source)
+
+    def set_properties(self, properties):
+        self._properties = properties
+        self.when_switch_mode()
+
     def when_switch_mode(self):
-        self._inner_source = self._create_inner_source()
+        self._inner_source._inner_source = source_from_light_properties(self._size, self._properties)
 
     def value(self):
         return self._inner_source.value()
 
     def _create_inner_source(self):
-        p = self._properties
+        return
+
+
+def source_from_light_properties(size, p):
         mode = p.mode.value()
         if mode == LightMode.CONSTANT:
             return p.color
@@ -72,8 +92,7 @@ class LightPropertiesSource(ValueSource):
             ])
             return Concat(*[
                 GradientRandomWalk(gradient, speed=speed)
-                for _ in range(self._size)
+                for _ in range(size)
             ])
         else:
             raise Exception(f"Unknown light mode: {mode}")
-

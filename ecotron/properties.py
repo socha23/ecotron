@@ -77,7 +77,6 @@ class Property:
             self._on_value_change()
 
 
-
 class LightProperties:
     def __init__(self, name="unnamed lights", color=rgb(255, 255, 255), mode=DEFAULT_MODE, param=DEFAULT_PARAM):
         self.name = name
@@ -96,6 +95,12 @@ class LightProperties:
             r += f", param = {param}"
         r += ")"
         return r
+
+    def copy(self):
+        return LightProperties(self.name,
+            color=self.color.value(),
+            mode=self.mode.value(),
+            param=self.param.value())
 
 
 def repr_as_hsv(v):

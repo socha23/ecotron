@@ -162,8 +162,7 @@ class BeepSentence:
         self.clip = bs.make_clip(*[b.sound for b in self.beeps], stereo)
 
     def play(self, volume=1, on_complete=lambda:None):
-        self.clip.volume = volume
-        self.clip.play(on_complete=on_complete)
+        self.clip.play(on_complete=on_complete, volume=volume)
 
     def stop(self):
         self.clip.stop()
