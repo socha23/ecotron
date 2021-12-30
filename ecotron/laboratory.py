@@ -189,10 +189,10 @@ class Laborant(MultiWidget):
                 STATE_ZAPPING: (0.1, 0.5),
             },
             state_to_pause_range= {
-                STATE_PEACE: (1, 4),
-                STATE_AGITATED: (0.5, 3),
-                STATE_ATTACK: (0.5, 2),
-                STATE_ZAPPING: (0.5, 2),
+                STATE_PEACE: (0.5, 3),
+                STATE_AGITATED: (0.5, 2),
+                STATE_ATTACK: (0.5, 1.5),
+                STATE_ZAPPING: (0.5, 1.5),
             },
             initial=180
         )

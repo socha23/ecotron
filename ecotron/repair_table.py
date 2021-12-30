@@ -16,7 +16,7 @@ SERVO_MOVE_SPEED = 0.3
 
 class RepairActor(PausingActor):
     def __init__(self, servo, light):
-        PausingActor.__init__(self, min_idle_time=3, max_idle_time=10)
+        PausingActor.__init__(self, min_idle_time=0.5, max_idle_time=3)
         self._welder_servo = servo
         self._welder_light = light
 
