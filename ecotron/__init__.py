@@ -1,3 +1,5 @@
+from ecotron.background_sound import BackgroundSound
+from ecotron.danglerbot import DanglerBot
 from ecotron.reactor import Reactor, ReactorDoor, ReactorWarningLights
 from ecotron.color_controller import DEFAULT_COLOR_CONTROLLER
 from ecotron.laboratory import Laboratory
@@ -142,6 +144,8 @@ class EcotronBase:
 
             properties.master_volume.on_value_change = lambda x : set_master_volume(x)
 
+            self.background_sound = BackgroundSound()
+
             self.aquarium = Aquarium([np_aqua_0, np_aqua_1, np_aqua_2, np_aqua_3])
             self.aquarium.bind_to_property(properties.aquarium_lights_on)
 
@@ -230,7 +234,8 @@ class EcotronBase:
                 stalker_light_pixels=np_laboratory_stalker,
                 tentacle_light_pixels=np_laboratory_tentacle,
             )
-            self.laboratory.bind_to_property(properties.laboratory_on)
+
+            self.danglerbot = DanglerBot(hub.device("B"))
 
 
 def bind_controls_to_properties(controls, properties):
@@ -242,9 +247,9 @@ def bind_controls_to_properties(controls, properties):
     control_toggles[0].bind_property(properties.jungle_on)
     control_toggles[1].bind_property(properties.repair_table_on)
     control_toggles[4].bind_property(properties.laboratory_on)
-    control_toggles[5].bind_property(properties.conveyor_on)
+    control_toggles[5].bind_property(properties.background_sound_on)
+    control_toggles[6].bind_property(properties.conveyor_on)
     control_toggles[7].bind_property(properties.fans_on)
-    control_toggles[8].bind_property(properties.laboratory_on)
     control_toggles[9].bind_property(properties.reactor_door_open)
 
     light_toggles = controls.light_toggle_board.toggles
@@ -271,14 +276,17 @@ def bind_controls_to_actions(controls, base):
             controls.elevator_controls.floor_buttons[floor_idx].on_press = lambda floor_idx=floor_idx: base.elevator.go_to_floor(floor_idx)
 
     controls.elevator_controls.button_red.on_press = DEFAULT_ECOTRON_PROPERTIES.print_properties
-   # controls.elevator_controls.button_green.on_press = base.laboratory.blitz_tentacle
+    #controls.elevator_controls.button_green.on_press = base.laboratory.blitz_tentacle
 
     controls.conveyor_controls.button_blue.on_press = base.airlock.run_cycle_from_outside
+    #controls.conveyor_controls.button_green.on_press = base.stairsdude.random_rotation
+
+    #controls.conveyor_controls.button_blue.on_press = base.danglerbot.next_plant
+    #controls.conveyor_controls.button_green.on_press = base.danglerbot.prev_plant
 
     controls.conveyor_controls.button_yellow.on_press = base.laboratory.button_press
     controls.conveyor_controls.button_yellow.on_release = base.laboratory.button_release
 
-    controls.conveyor_controls.button_green.on_press = base.stairsdude.random_rotation
     controls.conveyor_controls.button_red.on_press = base.reactor.boom
 
 

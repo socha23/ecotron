@@ -1,3 +1,4 @@
+from logging import currentframe
 import math
 import random
 import colorsys
@@ -209,6 +210,28 @@ class AlwaysOff(Constant):
     def __init__(self):
         Constant.__init__(self, 0)
 
+class Linear(ValueSource):
+    def __init__(self, duration_s=1, val_from=0, val_to=1):
+        super().__init__()
+        self._duration_s = duration_s
+        self._val_from = val_from
+        self._val_to = val_to
+        self._start_time = self.current_time()
+
+    def value(self):
+        phase = self._get_phase()
+        if phase >= 1:
+            return self._val_to
+        else:
+            return translate(phase, 0, 1, self._val_from, self._val_to)
+
+    def is_finished(self):
+        return self._get_phase() > 1
+
+    def _get_phase(self):
+        return float(self.current_time() - self._start_time) / self._duration_s
+
+
 # COLOR SOURCES
 
 # from byte rgb values
@@ -280,16 +303,28 @@ class Gradient(ValueSource):
     def is_finished(self):
         return self._phase() > 1
 
-
-class GradientRandomWalk(ValueSource):
+class GradientWalk(ValueSource):
     def __init__(self, gradient_definition,
+            gradient_val_source=1
+    ):
+        super().__init__()
+        self._gradient_definition = gradient_definition
+        self._gradient_val_source = gradient_val_source
+
+    def value(self):
+        return self._gradient_definition[self._gradient_val_source.value()]
+
+    def is_finished(self):
+        return self._gradient_val_source.is_finished()
+
+class RandomWalk(ValueSource):
+    def __init__(self,
             speed=1,
             speed_down = None
     ):
-        ValueSource.__init__(self)
+        super().__init__()
         self._speed_up = speed
         self._speed_down = speed_down if speed_down else speed
-        self._gradient_definition = gradient_definition
         self._start_point = random.uniform(0, 1)
         self._end_point = self._start_point
         self._start_time = 0
@@ -308,14 +343,20 @@ class GradientRandomWalk(ValueSource):
         if t > self._end_time:
             self._next_move()
         if self._start_time == self._end_time:
-            return self._gradient_definition[self._start_point]
+            return self._start_point
 
-        v = translate(t,
+        return translate(t,
             self._start_time, self._end_time,
             self._start_point, self._end_point
         )
 
-        return self._gradient_definition[v]
+
+class GradientRandomWalk(GradientWalk):
+    def __init__(self, gradient_definition,
+            speed=1,
+            speed_down = None
+    ):
+        super().__init__(gradient_definition, RandomWalk(speed, speed_down))
 
 
 class _Composite(ValueSource):
@@ -468,6 +509,66 @@ class TimeConstrained(_Decorator):
 
     def is_finished(self):
         return self.current_time() > self._cutoff_time
+
+
+class Progression(ValueSource):
+    def __init__(self, *sources):
+        super().__init__()
+        self._inner_sources = list(sources)
+        self._current = None
+        self._update_next_if_needed()
+
+    def _update_next_if_needed(self):
+        if self._current == None:
+            if not self._inner_sources:
+                return
+            self._current = self._inner_sources.pop(0)
+            print(self._current)
+        while self._current.is_finished() and self._inner_sources:
+            self._current = self._inner_sources.pop(0)
+            print(self._current)
+        if self._current.is_finished():
+            self._current = None
+
+    def value(self):
+        self._update_next_if_needed()
+
+        if self._current != None:
+            return self._current.value()
+        else:
+            return 0
+
+    def is_finished(self):
+        self._update_next_if_needed()
+        return self._current == None
+
+
+class FadeOut(_Decorator):
+    def __init__(self, duration_s=1, source=AlwaysOn()):
+        super().__init__(source)
+        self._fadeout_start = None
+        self._duration = duration_s
+
+    def value(self):
+        if self._fadeout_start == None:
+            return self._inner_source.value()
+        phase = (self.current_time() - self._fadeout_start) / self._duration
+        if phase <= 1:
+            return multiply(1 - phase, self._inner_source.value())
+        else:
+            return 0
+
+    def fadeout(self):
+        self._fadeout_start = self.current_time()
+
+    def is_fading_out(self):
+        return self._fadeout_start != None
+
+    def is_finished(self):
+        if self._fadeout_start == None:
+            return False
+        else:
+            return self.current_time() - self._fadeout_start > self._duration
 
 
 class FadeInOut(_Decorator):

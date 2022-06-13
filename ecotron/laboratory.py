@@ -57,6 +57,9 @@ class TentacleActor(PausingActor):
     def move_async_step(self, angle, speed):
         return lambda c: self._servo.move_to(angle, speed, c)
 
+    def when_turn_on(self):
+        PausingActor.when_turn_on(self)
+
     def when_turn_off(self):
         PausingActor.when_turn_off(self)
 
@@ -77,13 +80,13 @@ class TentaclePlant(MultiWidget):
                 STATE_PEACE: (0.01, 0.1),
                 STATE_AGITATED: (0.1, 3),
                 STATE_ATTACK: (0.1, 10),
-                STATE_ZAPPING: (0.1, 10),
+                STATE_ZAPPING: (10, 10),
             },
             state_to_pause_range= {
                 STATE_PEACE: (0.1, 0.2),
                 STATE_AGITATED: (0.1, 0.2),
-                STATE_ZAPPING: (0.1, 0.2),
                 STATE_ATTACK: (0.1, 0.2),
+                STATE_ZAPPING: (0.05, 0.05),
             },
             initial = 140
         )
@@ -98,13 +101,13 @@ class TentaclePlant(MultiWidget):
                 STATE_PEACE: (0.01, 0.1),
                 STATE_AGITATED: (0.1, 3),
                 STATE_ATTACK: (0.1, 10),
-                STATE_ZAPPING: (3, 10),
+                STATE_ZAPPING: (10, 10),
             },
             state_to_pause_range= {
                 STATE_PEACE: (0.1, 0.2),
                 STATE_AGITATED: (0.1, 0.2),
                 STATE_ATTACK: (0.1, 0.2),
-                STATE_ZAPPING: (0.05, 0.1),
+                STATE_ZAPPING: (0.05, 0.05),
             },
             initial=110
         )
@@ -189,10 +192,7 @@ class Laborant(MultiWidget):
                 STATE_ZAPPING: (0.1, 0.5),
             },
             state_to_pause_range= {
-                STATE_PEACE: (0.5, 3),
-                STATE_AGITATED: (0.5, 2),
-                STATE_ATTACK: (0.5, 1.5),
-                STATE_ZAPPING: (0.5, 1.5),
+                STATE_PEACE: (0.3, 1.5),
             },
             initial=180
         )
@@ -224,7 +224,6 @@ class Alarm(Widget):
     def danger(self):
         (Script()
             .add_step(ecotron.siren.DEFAULT.danger)
-            .add_sleep(0.5)
             .add_step(lambda: self._set_led_source(Sine(
                 ecotron.siren.DANGER_CLIP_PULSE_LENGTH,
                 source=Constant(0.5),
@@ -235,7 +234,6 @@ class Alarm(Widget):
     def warning(self):
         (Script()
             .add_step(ecotron.siren.DEFAULT.warning)
-            .add_sleep(0.5)
             .add_step(lambda: self._set_led_source(Sine(
                 ecotron.siren.WARNING_CLIP_PULSE_LENGTH,
                 source=Constant(0.5),
@@ -304,6 +302,9 @@ class Laboratory(MultiWidget):
         # TODO pass lights as well when not on own
         MultiWidget.__init__(self, self._tentacle_plant, self._stalk_plant, self._laborant, self._alarm)
 
+        self.bind_to_property(properties.laboratory_on)
+
+
     def _enter_transition(self):
         self._during_transition = True
 
@@ -318,12 +319,11 @@ class Laboratory(MultiWidget):
         props = DEFAULT_ECOTRON_PROPERTIES.laboratory_tentacle_lights.copy()
         props.mode.set_value(LightMode.PLASMA)
         props.param.set_value(0.9)
-        self._tentacle_lights.set_properties(props)
-
         (Script()
-            .add_step(lambda: say(SpeechLines.TENTACLE_PLANT_AGITATED))
-            .add_sleep(2)
+            .add_step(lambda: self._tentacle_lights.set_properties(props))
             .add_step(self._alarm.warning)
+            .add_sleep(1)
+            .add_step(lambda: say(SpeechLines.TENTACLE_PLANT_AGITATED))
             .add_sleep(1)
             .add_step(self._laborant.look_at_alarm)
             .add_sleep(0.5)
@@ -335,10 +335,10 @@ class Laboratory(MultiWidget):
         print("ATTACK")
         self._enter_transition()
         self._state = STATE_ATTACK
-        self._tentacle_plant.breakout()
         (Script()
-            .add_sleep(0.5)
+            .add_step(self._tentacle_plant.breakout)
             .add_step(self._alarm.danger)
+            .add_sleep(1)
             .add_step(lambda: say(SpeechLines.TENTACLE_PLANT_BREAKOUT))
             .add_step(self._laborant.look_at_breakout)
             .add_step(self._exit_transition)
@@ -356,7 +356,6 @@ class Laboratory(MultiWidget):
         self._enter_transition()
         self._state = STATE_PEACE
         (Script()
-            .add_sleep(0.5)
             .add_step(self._tentacle_plant.peace)
             .add_sleep(2)
             .add_step(self._alarm.off)

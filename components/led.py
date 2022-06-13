@@ -2,7 +2,7 @@ from digitalio import Direction
 from value_source import AlwaysOn, AlwaysOff, SourceWatcherMixin, Blink
 
 class PrimitiveLED:
-    def __init__(self, pin):        
+    def __init__(self, pin):
         self._pin = pin
         pin.direction = Direction.OUTPUT
 
@@ -39,6 +39,7 @@ class PWMLED(SourceWatcherMixin):
         self._pwm_channel = pwm_channel
 
     def on_value_change(self, val):
+        val = max(0, min(val, 1))
         self._pwm_channel.duty_cycle = int(0xffff * val**3) # val^2 to correct for non-linearity
-    
+
 

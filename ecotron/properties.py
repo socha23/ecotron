@@ -1,6 +1,5 @@
 from colorsys import hsv_to_rgb, rgb_to_hsv
 from enum import Enum
-from value_source import ValueSource
 
 def rgb(r, g, b):
     return (r / 256, g / 256, b / 256)
@@ -19,8 +18,10 @@ DEFAULT_PARAM = 0.5
 class EcotronProperties:
 
     def __init__(self):
+
         self.control_panel_ligths_on = Property("Control panel ligths on", 1)
         self.master_volume = Property("Master volume", 1)
+        self.background_sound_on = Property("Background sound on", 0)
         self.conveyor_on = Property("Conveyor on", 0)
         self.fans_on = Property("Fans on", 0)
         self.repair_table_on = Property("Repair table on", 0)
@@ -45,6 +46,7 @@ class EcotronProperties:
         self.laboratory_top_lights = LightProperties("Laboratory top lights", hsv(0.105, 0.767, 0.469))
         self.laboratory_stalker_lights = LightProperties("Laboratory stalker lights", hsv(0.922, 0.8, 0.7), mode = LightMode.PLASMA)
         self.laboratory_tentacle_lights = LightProperties("Laboratory tentacle plant lights", hsv(0.0, 0.9, 1), mode = LightMode.PLASMA)
+
 
     def print_properties(self):
         print()

@@ -7,6 +7,7 @@ from components.potentiometer import Potentiometer
 from tick_aware import TickAware
 from director import Script
 from ecotron.widget import Widget
+from sound import Clip
 
 # todo no longer conv controls; extract
 class ConveyorControls:
@@ -27,6 +28,8 @@ LINKS_IN_CHAIN = 40
 POS_UPDATE_DELTA = 5
 
 PLANT_COUNT = 8
+
+CLIP_CONVEYOR = Clip("./resources/gear_unlock.ogg", volume=1, stereo=[1, 0.5])
 
 class Plant:
     def __init__(self, idx, belt):
@@ -98,13 +101,14 @@ class Conveyor(Widget):
         self._phase_listeners.append(PhaseListener(phase, handler, self))
 
     def move_and_wait(self, callback=lambda:None):
-      s = (Script()
+      (Script()
+        .add_step(CLIP_CONVEYOR.play)
+        .add_sleep(0.3)
         .add_async_step(lambda c: self._belt.move(LINKS_PER_MOVE, c))
         .add_step(self._notify_on_move_complete_listeners)
         .add_sleep(PAUSE_DURATION)
         .add_step(self.idle)
-      )
-      self._director.execute(s)
+      ).execute()
 
     def idle(self):
       if self.on:

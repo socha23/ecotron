@@ -38,11 +38,11 @@ class RGBLED:
         self._send_rgb_commands()
 
     def _send_rgb_commands(self):
-        self._port.set_mode(self.MODE_RGB)    
-        
+        self._port.set_mode(self.MODE_RGB)
+
         r, g, b = self.value
-        self._port.send(SetRgbColor(self._port.port_id(), r, g, b))    
-    
+        self._port.send(SetRgbColor(self._port.port_id(), r, g, b))
+
     def set_rgb(self, r, g, b):
         self.value = (r, g, b)
 
@@ -69,8 +69,8 @@ class Motor:
 
     def set_feedback_mode(self, delta_interval=1):
         self._feedback_mode = True
-        self._port.set_mode(self.MODE_ANGLE_SENSOR, delta_interval, True) 
-        self._port.send(PortValueRequest(self._port.port_id()))        
+        self._port.set_mode(self.MODE_ANGLE_SENSOR, delta_interval, True)
+        self._port.send(PortValueRequest(self._port.port_id()))
 
 
     def is_initialized(self):
@@ -78,8 +78,8 @@ class Motor:
 
     def set_acc_time(self, acc_time_s):
         self._port.send(MotorSetAccTime(self._port.port_id(), acc_time_s * 1000))
-    
-    def set_dec_time(self, dec_time_s): 
+
+    def set_dec_time(self, dec_time_s):
         self._port.send(MotorSetDecTime(self._port.port_id(), dec_time_s * 1000))
 
     def brake(self, on_complete=None):
@@ -98,7 +98,7 @@ class Motor:
         self._on_complete = on_complete
         self._port.send(MotorStartSpeedForDegrees(self._port.port_id(), int(degrees), int(speed * 100), max_power=int(power * 100)))
 
-    def goto_absolute_position(self, position, speed, power=1, on_complete=None, execute_immediately=False):
+    def goto_absolute_position(self, position, speed=1, power=1, on_complete=None, execute_immediately=False):
         self._on_complete = on_complete
         dest_position = position
         if self._logical_pos_delta != None:
@@ -112,7 +112,7 @@ class Motor:
     def _on_idle(self):
         if self._command_in_progress:
             self._command_in_progress = False
-            if self._on_complete != None:                
+            if self._on_complete != None:
                 self._on_complete()
                 self._on_complete = None
 
@@ -148,7 +148,7 @@ class Motor:
             self._on_command_in_progress()
         if isinstance(msg, PortOutputFeedback) and msg.is_idle():
             self._on_idle()
-        if isinstance(msg, PortValueSingle):    
+        if isinstance(msg, PortValueSingle):
             self._on_motor_pos(msg.int32value())
 
 

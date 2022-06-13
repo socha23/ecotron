@@ -23,12 +23,13 @@ class Toggle(TickAware):
         return not self.is_on()
 
     def tick(self, time, delta):
-        if self.value() != self._last_tick_value:
+        tmp = self._last_tick_value
+        self._last_tick_value = self.value()
+        if self.value() != tmp:
             if self.is_on():
                 self._on_on()
             else:
                 self._on_off()
-        self._last_tick_value = self.value()
 
     def _on_on(self):
         for p in self._properties:
@@ -40,6 +41,10 @@ class Toggle(TickAware):
 
     def bind_property(self, *properties):
         self._properties = properties
+        if self.is_on():
+            self._on_on()
+        else:
+            self._on_off()
 
 class ToggleBoard:
     def __init__(self, toggles):

@@ -31,9 +31,12 @@ class Widget:
     def turn_off(self):
         self.on = False
 
+    def when_initialize(self, property_value):
+        pass
+
     def bind_to_property(self, property):
         property.on_value_change = lambda x: self.turn_on() if x == 1 else self.turn_off()
-
+        self.when_initialize(property.value())
 
 class MultiWidget(Widget):
     def __init__(self, *widgets):
@@ -73,6 +76,11 @@ class PausingActor(Actor):
 
     def _get_idle_time(self):
         return random.uniform(self._min_idle_time, self._max_idle_time)
+
+    def when_initialize(self, property_value):
+        if property_value:
+            self._do_action()
+
 
     def when_turn_on(self):
         self._do_action()
