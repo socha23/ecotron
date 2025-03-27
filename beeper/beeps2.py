@@ -242,7 +242,10 @@ def airlock_speech():
     return quick_robot_speech("airlock", 300, sine_coefficient=1, stereo=(0.4, 0.6))
 
 def bebop_speech():
-    return quick_robot_speech("bebop", 300, triangle_coefficient=0.8, square_coefficient=0.2, stereo=(0.5, 0.5))
+    return quick_robot_speech("bebop", 300,
+    triangle_coefficient=0.8,
+    square_coefficient=0.2,
+    stereo=(0.5, 0.5))
 
 def eddard_speech():
     return quick_robot_speech("eddard", 80,
@@ -253,6 +256,16 @@ def eddard_speech():
         stereo=(0.6, 0.4)
 
     )
+
+
+def dangler_speech():
+    return quick_robot_speech("dangler", 80,
+        triangle_coefficient=0.7,
+        sine_coefficient=0.2,
+        stereo=(0.8, 0.2)
+
+    )
+
 
 def spiderbro_speech():
     return quick_robot_speech("spiderbro", 40,

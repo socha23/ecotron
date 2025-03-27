@@ -29,6 +29,8 @@ class EcotronProperties:
 
         self.jungle_on = Property("Jungle on", 0)
 
+        self.therapy_room_on = Property("Therapy room on", 0)
+
         self.aquarium_lights_on = Property("Aquarium lights on", 0)
         self.aquarium_color = Property("Aquarium color", (0, 0.85, 1))
         self.aquarium_hue_drift = Property("Aquarium hue drift", 0.16)

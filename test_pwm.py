@@ -7,7 +7,8 @@ from value_source import AlwaysOff, AlwaysOn, Sine, ValueSource, Multiply, Const
 
 kit = ServoKit(channels=16, address=0x43)
 
-leds = [PWMLED(kit._pca.channels[c]) for c in range(8)]
+#leds = [PWMLED(kit._pca.channels[c]) for c in range(8)]
+leds = [PWMLED(kit._pca.channels[c]) for c in [8, 9]]
 DEFAULT_CONTROLLER.on = True
 
 for led in leds:

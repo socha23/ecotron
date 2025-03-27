@@ -1,5 +1,5 @@
 from ecotron.background_sound import BackgroundSound
-from ecotron.danglerbot import DanglerBot
+from ecotron.therapy_room import TherapyRoom
 from ecotron.reactor import Reactor, ReactorDoor, ReactorWarningLights
 from ecotron.color_controller import DEFAULT_COLOR_CONTROLLER
 from ecotron.laboratory import Laboratory
@@ -53,6 +53,7 @@ mcp3008a = MCP3008(spi, cs)
 servo_kit_1 = ServoKit(channels=16, reference_clock_speed=25000000)
 servo_kit_2 = ServoKit(channels=16, address=0x41)
 servo_kit_3 = ServoKit(channels=16, address=0x42)
+servo_kit_4 = ServoKit(channels=16, address=0x43)
 neopixels = NeopixelStrip(board.D21, 137)
 
 class Ecotron:
@@ -235,7 +236,9 @@ class EcotronBase:
                 tentacle_light_pixels=np_laboratory_tentacle,
             )
 
-            self.danglerbot = DanglerBot(hub.device("B"))
+            self.therapy_room = TherapyRoom(hub.device("B"),
+                servo_kit_4
+            )
 
 
 def bind_controls_to_properties(controls, properties):
@@ -245,7 +248,8 @@ def bind_controls_to_properties(controls, properties):
     control_toggles = controls.control_toggle_board.toggles
 
     control_toggles[0].bind_property(properties.jungle_on)
-    control_toggles[1].bind_property(properties.repair_table_on)
+    control_toggles[1].bind_property(properties.therapy_room_on)
+    control_toggles[2].bind_property(properties.repair_table_on)
     control_toggles[4].bind_property(properties.laboratory_on)
     control_toggles[5].bind_property(properties.background_sound_on)
     control_toggles[6].bind_property(properties.conveyor_on)
@@ -265,7 +269,8 @@ def bind_controls_to_properties(controls, properties):
     light_toggles[4].bind_property(properties.laboratory_top_lights.on)
 
     light_toggles[5].bind_property(properties.light_strip.on)
-    light_toggles[7].bind_property(properties.aquarium_lights_on)
+    # not updated to LightProperties
+    # light_toggles[7].bind_property(properties.aquarium_lights_on)
     light_toggles[8].bind_property(properties.reactor_fan_lights.on)
     light_toggles[9].bind_property(properties.reactor_lights_on)
 
@@ -275,17 +280,19 @@ def bind_controls_to_actions(controls, base):
     for floor_idx in range(len(Elevator.FLOOR_HEIGHTS)):
             controls.elevator_controls.floor_buttons[floor_idx].on_press = lambda floor_idx=floor_idx: base.elevator.go_to_floor(floor_idx)
 
-    controls.elevator_controls.button_red.on_press = DEFAULT_ECOTRON_PROPERTIES.print_properties
+    #controls.elevator_controls.button_red.on_press = DEFAULT_ECOTRON_PROPERTIES.print_properties
     #controls.elevator_controls.button_green.on_press = base.laboratory.blitz_tentacle
 
-    controls.conveyor_controls.button_blue.on_press = base.airlock.run_cycle_from_outside
+    controls.elevator_controls.button_red.on_press = base.airlock.run_cycle_from_outside
+    #controls.conveyor_controls.button_blue.on_press = base.airlock.run_cycle_from_outside
     #controls.conveyor_controls.button_green.on_press = base.stairsdude.random_rotation
 
-    #controls.conveyor_controls.button_blue.on_press = base.danglerbot.next_plant
-    #controls.conveyor_controls.button_green.on_press = base.danglerbot.prev_plant
+    controls.conveyor_controls.button_blue.on_press = base.therapy_room.next_plant
+    controls.conveyor_controls.button_green.on_press = base.therapy_room.prev_plant
+    controls.conveyor_controls.button_yellow.on_press = base.therapy_room.spray
 
-    controls.conveyor_controls.button_yellow.on_press = base.laboratory.button_press
-    controls.conveyor_controls.button_yellow.on_release = base.laboratory.button_release
+    #controls.conveyor_controls.button_yellow.on_press = base.laboratory.button_press
+    #controls.conveyor_controls.button_yellow.on_release = base.laboratory.button_release
 
     controls.conveyor_controls.button_red.on_press = base.reactor.boom
 
